@@ -164,9 +164,13 @@ function npcInitialPosition(n, b) {
 function spawnBill(a, key = null, sponsor = null) {
     if (a === "none") return null;
     if (!key) {
-        const options = Object.keys(BILLS).filter(k => BILLS[k].arena === a && !G.bills.some(b => b.key === k) && (G.usedBills[k] || -99) < monthsNow() - 18);
-        if (!options.length) return null;
-        key = pick(options);
+        // Completed legislation never comes back as an identical bill; failed bills can return after two years.
+        const done = G.completedBills || {};
+        const options = Object.keys(BILLS).filter(k => BILLS[k].arena === a && !done[k] && !G.bills.some(b => b.key === k) && (G.usedBills[k] || -99) < monthsNow() - 24 && (!BILLS[k].era || BILLS[k].era.includes(G.era)));
+        const majors = options.filter(k => BILLS[k].major);
+        if (majors.length && chance(50)) key = pick(majors);
+        else if (!options.length || chance(35)) return npcGeneratedBill(a);
+        else key = pick(options);
     }
     return createBill(key, sponsor);
 }
@@ -425,6 +429,9 @@ function enactBill(b) {
     }
     if (f.worldAid) e.world = { key: f.worldAid, stability: 15, prosperity: 6 };
     if (b.policyKey) G.policies[b.policyKey].level = b.policyLevel;
+    if (f.custom && b.arena === "senate" && b.sponsor === "player") G.approPool -= f.cost || 0;
+    if (f.custom || f.program || f.major || b.sponsor === "player" || f.perYear) recordLaw(b);
+    else { G.completedBills = G.completedBills || {}; G.completedBills[b.key] = true; }
     if (b.key === "ethics_reform") G.ethicsLaw = true;
     return applyEffects(e);
 }

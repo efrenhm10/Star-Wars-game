@@ -28,9 +28,10 @@ const SPECIES = {
     sullustan:   { name: "Sullustan",    skins: ["#b9a79a", "#a39284", "#c9b8a8"], names: "sullustan" },
     dathomirian: { name: "Dathomirian",  skins: ["#ece8ee", "#d8d2dc", "#cfc4d4"], hair: true, face: "human", names: "dathomirian" },
     selkath:     { name: "Selkath",      skins: ["#6f8fa8", "#5a7a92", "#8aa6b8"], names: "selkath" },
-    // Canon-only species (not offered in character creation).
-    neimoidian:  { name: "Neimoidian",   skins: ["#8fa08a", "#7a8f78"], face: "human", npc: true },
-    muun:        { name: "Muun",         skins: ["#e5e1da", "#d8d2c8"], face: "human", npc: true },
+    pantoran:    { name: "Pantoran",     skins: ["#8fb3d9", "#7aa3cf", "#a6c4e4", "#6f95c4"], hair: true, face: "human", names: "pantoran" },
+    umbaran:     { name: "Umbaran",      skins: ["#e8e6ee", "#d8d6e2", "#cfd0dc", "#c4c8d8"], face: "human", eyes: ["#1c1c2c", "#3a2a5a", "#2a3a5a"], features: ["Smooth crown", "Cranial ridges"], names: "umbaran" },
+    neimoidian:  { name: "Neimoidian",   skins: ["#8fa08a", "#7a8f78", "#9aa88a"], face: "human", names: "neimoidian" },
+    muun:        { name: "Muun",         skins: ["#e5e1da", "#d8d2c8", "#ece8e0"], face: "human", names: "muun" },
     hutt:        { name: "Hutt",         skins: ["#9a8a5a", "#7f7448"], npc: true }
 };
 
@@ -59,7 +60,11 @@ const NAME_POOLS = {
     mustafarian: { single: ["Ahkt", "Nokk-Tor", "Vuuk", "Gral Morr", "Tchak", "Oonek"] },
     sullustan: { first: ["Sian", "Nien", "Dar", "Aven", "Syub", "Tolh"], last: ["Tevv", "Nunb", "Barr", "Tuur", "Sulo"] },
     dathomirian: { first: ["Talzin", "Merrin", "Asajj", "Karis", "Naa'leth", "Luce", "Daka", "Savage", "Feral"], last: ["of the Nightsisters", "Ventress", "Opress", "of the Red Mist"] },
-    selkath: { single: ["Shasa", "Ahtoba", "Sulas", "Kolt Varo", "Ahlan", "Tweel"] }
+    selkath: { single: ["Shasa", "Ahtoba", "Sulas", "Kolt Varo", "Ahlan", "Tweel"] },
+    pantoran: { first: ["Riyo", "Chi", "Papanoida", "Chi Eekway", "Che Amanwe", "Ion", "Rya", "Sanya", "Tarn", "Oma"], last: ["Chuchi", "Cho", "Papanoida", "Eekway", "Amanwe", "Deroon", "Vall", "Sestri"] },
+    umbaran: { first: ["Mee", "Tup", "Vassa", "Rhen", "Syn", "Oru", "Krell", "Deech"], last: ["Deechi", "Vorne", "Sarrash", "Imol", "Tessk", "Khel"] },
+    neimoidian: { first: ["Nute", "Lott", "Rune", "Tey", "Gilramos", "Hath", "Daultay", "Sly"], last: ["Gunray", "Dod", "Haako", "How", "Libkath", "Monn", "Dofine", "Moore"] },
+    muun: { first: ["San", "Tonith", "Mak", "Pors", "Lam", "Hego"], last: ["Hill", "Plagueis", "Tonith", "Damask", "Sion", "Vrill"] }
 };
 
 function randomName(worldKey, species) {
@@ -79,7 +84,7 @@ function randomAppearance(species) {
         hair: sp.hair ? pick(["short", "long", "bun", "curly", "braids", "none"]) : "none",
         hairColor: pick(HAIR_COLORS.slice(0, 8)),
         feature: sp.features ? 0 : null,
-        marks: species === "dathomirian" ? "tattoo" : "none",
+        marks: species === "dathomirian" ? "tattoo" : species === "pantoran" ? "pantoran" : "none",
         accessory: "none",
         attire: "robes",
         attireColor: pick(ATTIRE_COLORS),
@@ -301,6 +306,9 @@ function renderPortrait(a, size = 120, bg = null) {
         if (sp === "neimoidian") {
             head.push(`<ellipse cx="52" cy="58" rx="3.8" ry="2.8" fill="#e05a2a"/><ellipse cx="68" cy="58" rx="3.8" ry="2.8" fill="#e05a2a"/><circle cx="52" cy="58" r="1.2" fill="#111"/><circle cx="68" cy="58" r="1.2" fill="#111"/>
                 <path d="M57 68 L58 66 M63 68 L62 66" stroke="${dark}" stroke-width="1.5"/><path d="M52 76 Q60 74 68 76" stroke="${dark}" stroke-width="1.8" fill="none"/>`);
+        } else if (sp === "umbaran") {
+            head.push(`<ellipse cx="52" cy="57" rx="4.6" ry="3.4" fill="${eye}"/><ellipse cx="68" cy="57" rx="4.6" ry="3.4" fill="${eye}"/><circle cx="51" cy="56" r="1" fill="#fff" opacity=".6"/><circle cx="67" cy="56" r="1" fill="#fff" opacity=".6"/>
+                <path d="M56 70 Q60 71 64 70" stroke="${dark}" stroke-width="1.2" fill="none"/>${f === 1 ? `<path d="M46 40 Q60 32 74 40 M48 46 Q60 40 72 46" stroke="${dark}" stroke-width="1.4" fill="none" opacity=".6"/>` : ""}`);
         } else if (sp === "muun") {
             head.push(`<ellipse cx="54" cy="56" rx="2.5" ry="1.8" fill="#333"/><ellipse cx="66" cy="56" rx="2.5" ry="1.8" fill="#333"/><path d="M56 72 Q60 73 64 72" stroke="${dark}" stroke-width="1.2" fill="none"/>`);
         } else {

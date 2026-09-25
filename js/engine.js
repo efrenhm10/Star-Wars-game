@@ -377,15 +377,17 @@ function newCareer({ worldKey, roleIndex, name, ideology, app }) {
     buildLocalFigures(role);
     seedRelationships();
 
-    setOffice(makeOffice(role), { silent: true });
-    if (role.startLeft && G.office.termLeft != null) G.office.termLeft = role.startLeft;
+    // Every career begins at the start of its first term.
+    setOffice(makeOffice({ ...role, fresh: true }), { silent: true });
     initCommittees();
+    initSpecial();
 
     G.dynasty.push({ name, generation: 1, from: G.year, offices: [role.title], end: null, legacy: [] });
 
     log(`32 BBY. ${name} begins a political career on ${w.name} as ${role.title}. ${w.intro}`, "career");
     spawnBill(arena() === "none" ? "senate" : arena());
     if (arena() === "local") spawnBill("senate");
+    seedIssues();
     seedInbox();
 }
 

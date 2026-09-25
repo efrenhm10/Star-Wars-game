@@ -79,11 +79,11 @@ function tickOpinion() {
     const p = G.planet;
     const hardship = Math.max(0, 50 - (p.employment + p.healthcare + p.housing) / 3) * 0.6;
     const outer = w.region !== "core" ? 1 : 0.4;
-    let target = w.sep + hardship + (G.repCorruption - 40) * 0.25 * outer + (G.factions.independence) * 0.05;
+    let target = w.sep + separatismPush() + hardship + (G.repCorruption - 40) * 0.25 * outer + (G.factions.independence) * 0.05;
     if (G.siege && G.siege.blockade) target += 10;
     if (["crisis", "war"].includes(G.era)) target += 6 * outer;
     if (G.occupied) target += G.occupied.by === "Republic" ? 20 : -20;
-    if (G.aidMonths > 0) { target -= 8; G.aidMonths--; }
+    if (G.aidMonths > 0) { target -= 8 * aidSensitivity(); G.aidMonths--; }
     if (G.allegiance === "separatist") target += 10;
     if (G.era === "empire" || G.era === "rebellion") target = 10 + G.liberties * 0.2;
     const neutral = w.canonAlign === "neutral" ? 28 : 16;
@@ -140,7 +140,7 @@ function tickWar() {
     // New attacks.
     if (G.war && !G.siege && !G.occupied && G.allegiance !== "hutt") {
         const regionRisk = { core: 0.6, mid: 1.6, outer: 2.6 }[w.region];
-        let p = G.allegiance === "neutral" ? regionRisk * 0.5 : regionRisk;
+        let p = (G.allegiance === "neutral" ? regionRisk * 0.5 : regionRisk) * attackMultiplier();
         if (w.ratings.military >= 4 || w.ratings.industry >= 5) p += 0.8;
         if (chance(p)) {
             const by = G.allegiance === "separatist" ? "Republic" : "Separatist";
@@ -434,7 +434,11 @@ function tickHistory() {
     if (G.month === 1) Object.entries(CANON).forEach(([k, c]) => {
         if (c.from === bby && !G.npcs.some(n => n.canon === k) && c.arena !== "jedi") {
             G.npcs.push(makeCanonNpc(k, c.arena === "local" && c.world !== G.worldKey ? { arena: "galactic" } : {}));
-            if (c.seat && G.galaxy[c.world] && G.galaxy[c.world].senatorId !== "player") G.galaxy[c.world].senatorId = canonNpc(k).id;
+            if (c.seat && G.galaxy[c.world] && G.galaxy[c.world].senatorId !== "player") {
+                const old = worldSenator(c.world);
+                if (old && !old.canon) { old.arena = "retired"; old.title = `Former Senator of ${worldName(c.world)}`; }
+                G.galaxy[c.world].senatorId = canonNpc(k).id;
+            }
         }
     });
 }

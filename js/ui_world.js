@@ -15,7 +15,7 @@ function renderWorldPicker() {
                 <div class="wc-head"><b>${w.name}</b><span class="diff" title="Difficulty">${"◆".repeat(w.difficulty)}${"◇".repeat(5 - w.difficulty)}</span></div>
                 <span class="wc-gov">${esc(w.govType)}</span>
                 <span class="small">${esc(w.tagline)}</span>
-                <span class="wc-stats small"><span>Wealth ${stars(w.ratings.wealth)}</span><span>Military ${stars(w.ratings.military)}</span><span>Stability ${stars(w.ratings.stability)}</span></span>
+                <span class="wc-stats small"><span>Wealth ${stars(w.ratings.wealth)}</span><span>Stability ${stars(w.ratings.stability)}</span><span>Resources ${stars(w.ratings.resources)}</span><span>Vulnerability ${stars(w.ratings.vulnerability)}</span><span>Identity ${stars(w.ratings.identity)}</span></span>
                 <span class="muted small">${w.species.map(s => SPECIES[s].name).join(" · ")} · ${w.roles.length} roles</span>
             </button>`).join("")}
         </div></div>`).join("");
@@ -51,6 +51,8 @@ function renderWorldSetup(key) {
             <div><h4>Major problems</h4><ul class="small">${list(w.problems)}</ul></div>
             <div><h4>Major advantages</h4><ul class="small">${list(w.advantages)}</ul></div>
         </div>
+        <h3>What the stars mean</h3>
+        <div class="grid2">${attributesPanel(w)}</div>
         <h3>Constitution</h3>
         <table class="rules">
             <tr><td class="muted">Government</td><td>${esc(c.gov)}</td></tr>
@@ -147,7 +149,7 @@ function warPanel() {
 function viewPowers() {
     const L = lens();
     const k = G.office.kind;
-    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}`;
+    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${specialPowers()}`;
     if (k === "senator") out += senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += rolePowers();
@@ -166,7 +168,7 @@ function senatorDesk() {
         return `<tr><td><b>${c.name}</b><br><span class="muted small">${c.note}</span></td><td class="small">Chair: ${esc(chair)}</td>
             <td>${member ? (G.chairOf === key ? '<span class="hint up">Chair</span>' : `<span class="hint up">Member</span> ${G.seniority >= 48 ? `<button class="mini" data-act="seekchair" data-k="${key}" ${G.ap < 8 ? "disabled" : ""}>Seek chair · 8</button>` : `<span class="muted small">chair after 4 yrs</span>`}`) : `<button class="mini" data-act="assign" data-k="${key}" ${G.ap < 5 ? "disabled" : ""}>Request seat · 5</button>`}</td></tr>`;
     }).join("");
-    const pork = world().pork || [];
+    const pork = [];
     const porkRows = pork.map((p, i) => {
         const e = G.earmarks.find(x => x.idx === i && x.status !== "rejected");
         return `<div class="pork"><div class="statrow"><b>${esc(p[0])}</b><b class="c-und">${p[1]}M cr</b></div><p class="small">${esc(p[4])}</p>
@@ -180,7 +182,9 @@ function senatorDesk() {
     const delivered = G.earmarks.filter(e => e.status === "built").length;
     const bloc = (key, label, cond = true) => cond ? tact("bloc", label, 3, "", `data-k="${key}"`) : "";
     return `<div class="cols"><div class="col-main">
-        ${panel("💰 Bring it home", `<div class="statrow"><span>Available Republic funds (this year)</span><b>${G.approPool.toLocaleString()}M credits</b></div><p class="muted small">Requests go to the Finance Committee's appropriations markup in Month 10. You need committee support, cosponsors — and the Chancellor not to hate you. Delivered so far: ${delivered} project${delivered === 1 ? "" : "s"} (${G.record.appropriations.toLocaleString()}M credits).</p>${porkRows}`)}
+        ${panel("💰 Bring it home", `<div class="statrow"><span>Available Republic funds (this year)</span><b>${G.approPool.toLocaleString()}M credits</b></div><p class="muted small">Needs come from your constituents, your tours and campaign stops, and from projects you've already built. Turn an issue into an appropriation, then fight for it: cosponsors, the Finance Committee, the Chancellor. Markup is in Month 10. Delivered so far: ${delivered} project${delivered === 1 ? "" : "s"} (${G.record.appropriations.toLocaleString()}M credits).</p>
+            ${tact("hometour", "🚀 Tour the homeworld to find needs", 3)}<button class="secondary" data-act="view" data-v="issues">📬 Open your Agenda (${openIssues().length} open issues)</button>`)}
+        ${pipelinePanel()}
         ${panel("🏛️ Committees", `<div class="table-wrap"><table>${coms}</table></div><p class="muted small">Seniority: ${Math.floor(G.seniority / 12)} yrs ${G.seniority % 12} mo. A hostile chair can bottle up bills in committee.</p>`)}
     </div><div class="col-side">
         ${panel("🔍 Oversight", `<select id="hearingSel"><option value="chancellor">The Chancellor's office</option><option value="defense">The Ministry of Defense</option><option value="banking">The Banking Clan</option><option value="tradefed">The Trade Federation</option></select>
@@ -335,6 +339,7 @@ function viewGalaxy() {
         ${statRow("Prosperity", Math.round(s.prosperity), s.prosperity)}
         ${statRow("Independence support", `${Math.round(s.indep)}%`, s.indep, "bad")}
         ${sen ? `<div class="mini-npc">${renderPortrait(sen.app, 44)}<div><b>${esc(sen.name)}</b><br><span class="small muted">${esc(sen.title)} · ${FACTIONS[sen.faction].name}</span> ${relBadge(sen.rel)}</div></div>` : s.senatorId === "player" ? "<p>You represent this world.</p>" : ""}
+        ${sel === G.worldKey ? `<h4>Your world's attributes (live)</h4>${Object.entries(ATTRIBUTES).map(([k, a]) => `<div class="statrow small"><span>${a.name}</span>${stars(attr(k))}</div>`).join("")}` : ""}
         ${sel !== G.worldKey && !s.destroyed ? tact("visit", "🚀 State visit", 3, "Improves relations with its senator.", `data-key="${sel}"`) : ""}`);
     const galStats = Object.entries(GAL_STATS).map(([k, d]) => statRow(`${d.icon} ${d.name}`, Math.round(G.gal[k]), G.gal[k], d.bad ? "bad" : "good")).join("")
         + (["empire", "rebellion"].includes(G.era) ? statRow("✊ Rebellion strength", Math.round(G.rebellion), G.rebellion, "good") : "")

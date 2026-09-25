@@ -297,7 +297,10 @@ function tickAppropriations() {
             const ch = applyEffects({ g: e.g, gal: e.gal || {}, trust: 2 });
             G.record.appropriations += e.cost;
             G.homeDelivered = (G.homeDelivered || 0) + 1;
-            report(`✂️ Ribbon cutting: ${e.name}`, `${e.blurb}. Your constituents notice.`, ch);
+            e.followAt = monthsNow() + ri(4, 10);
+            const iss = e.issueUid && (G.issues || []).find(x => x.uid === e.issueUid);
+            if (iss) iss.status = "resolved";
+            report(`🎗️ OPENING CEREMONY: ${e.name}`, `${e.name} has opened. Hundreds of residents attended; local officials are praising your work.`, ch);
             log(`💰 Delivered ${e.name} (${e.cost}M credits) to ${world().name}.`, "legacy");
         }
     });
@@ -306,6 +309,9 @@ function tickAppropriations() {
         p.monthsLeft--;
         if (p.monthsLeft <= 0) {
             Object.entries(p.fx).forEach(([k, v]) => { if (k === "fortify") G.fortify += v; else G.base[k] += v; });
+            p.followAt = monthsNow() + ri(4, 10);
+            const iss = (G.issues || []).find(x => x.uid === p.key);
+            if (iss) iss.status = "resolved";
             report(`🏗️ Completed: ${p.name}`, p.privateOwned ? "Built and owned by private investors." : "Opened by your government.", applyEffects({ trust: 2, g: p.g || {} }));
             log(`🏗️ Completed ${p.name}.`, "legacy");
         }

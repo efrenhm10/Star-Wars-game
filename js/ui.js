@@ -8,6 +8,7 @@ const $ = sel => document.querySelector(sel);
 const VIEWS = [
     { key: "office",     icon: "🗂️", name: "Office" },
     { key: "powers",     icon: "⭐", name: "Powers" },
+    { key: "issues",     icon: "📬", name: "Agenda" },
     { key: "chamber",    icon: "🏛️", name: "Chamber" },
     { key: "government", icon: "🕸️", name: "Policy" },
     { key: "public",     icon: "📊", name: "Public" },
@@ -28,7 +29,7 @@ function render() {
     renderHud();
     renderDock();
     document.body.dataset.lens = lens();
-    const fn = { powers: viewPowers, office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, charter: viewCharter, archive: viewArchive }[view];
+    const fn = { powers: viewPowers, issues: viewIssues, office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, charter: viewCharter, archive: viewArchive }[view];
     $("#view").innerHTML = fn();
     renderScene();
 }
@@ -93,7 +94,7 @@ function renderHud() {
 function renderDock() {
     const inbox = G.inbox.length;
     const pw = { senate: "🏛️", executive: "🏢", court: "👑", chancellery: "🎖️", city: "🏙️", movement: "✊", command: "🛡️", underground: "✊" }[lens()];
-    $("#dock").innerHTML = VIEWS.map(v => `<button class="dock-btn ${view === v.key ? "active" : ""}" data-act="view" data-v="${v.key}"><span class="di">${v.key === "powers" ? pw : v.icon}</span><span>${v.key === "powers" ? roleSchema().label : v.name}</span>${v.key === "office" && inbox ? `<em class="badge">${inbox}</em>` : ""}</button>`).join("");
+    $("#dock").innerHTML = VIEWS.map(v => `<button class="dock-btn ${view === v.key ? "active" : ""}" data-act="view" data-v="${v.key}"><span class="di">${v.key === "powers" ? pw : v.icon}</span><span>${v.key === "powers" ? roleSchema().label : v.name}</span>${v.key === "office" && inbox ? `<em class="badge">${inbox}</em>` : ""}${v.key === "issues" && openIssues().length ? `<em class="badge">${openIssues().length}</em>` : ""}</button>`).join("");
 }
 
 
@@ -162,6 +163,7 @@ function viewOffice() {
                 <div class="era-banner"><b>${esc(ERAS[G.era].name)}</b> · ${esc(ERAS[G.era].note)}</div>
                 ${warPanel()}
                 ${panel("📂 Dossiers", inbox, "inbox")}
+                ${officeIssuesPanel()}
             </div>
             <div class="col-side">
                 ${panel("Situation", brief)}
@@ -215,10 +217,13 @@ function viewChamber() {
     const b = bills.find(x => x.id === ui.bill);
     const clock = `${String(8 + (G.month * 7) % 11).padStart(2, "0")}:${String((G.year * 13 + G.month * 29) % 60).padStart(2, "0")}`;
     const header = `<div class="chamber-head"><span>${esc(arenaName(a).toUpperCase())} — ${clock}</span><span class="muted">${a === "senate" ? SENATE_SIZE : 100} seats</span></div>`;
-    const tabs = bills.map(x => `<button class="tab ${x.id === ui.bill ? "active" : ""}" data-act="bill" data-id="${x.id}">Bill ${x.num}</button>`).join("");
-    const introducible = Object.entries(BILLS).filter(([k, t]) => t.arena === a && !G.bills.some(x => x.key === k));
+    const catName = { yours: "✍️ Yours", major: "📜 Major galactic legislation", others: "🏛️ Introduced by others" };
+    const tabs = ["yours", "major", "others"].map(cat => { const list = bills.filter(x => billCategory(x) === cat); return list.length ? `<span class="tabcat">${catName[cat]}</span>` + list.map(x => `<button class="tab ${x.id === ui.bill ? "active" : ""}" data-act="bill" data-id="${x.id}">Bill ${x.num}</button>`).join("") : ""; }).join("");
+    const done = G.completedBills || {};
+    const introducible = Object.entries(BILLS).filter(([k, t]) => t.arena === a && !done[k] && !G.bills.some(x => x.key === k) && (!t.era || t.era.includes(G.era))).slice(0, 6);
     const canIntroduce = a === "senate" ? ["senator", "chancellor"].includes(G.office.kind) : G.office.kind !== "outsider";
-    const intro = canIntroduce ? panel("Introduce legislation", `<p class="muted small">Costs 6 capital and 6 influence. The vote comes in three months, and it goes on your record.</p>
+    const intro = canIntroduce ? panel("✍️ Your legislation", `<p class="small">Write your own bill in the <b>Bill Builder</b>, or start from an issue on your Agenda.</p><button class="primary" data-act="builder-open">Open the Bill Builder</button>
+        <h4>Model legislation</h4><p class="muted small">Pre-written bills of this era. Completed laws never reappear. Costs 6 capital and 6 influence.</p>
         <div class="bill-list">${introducible.map(([k, t]) => `<button class="secondary" data-act="introduce" data-key="${k}"><b>${esc(t.title)}</b><span class="muted small">${esc(t.desc)}</span></button>`).join("")}</div>`) : "";
     const other = G.bills.filter(x => x.arena !== a).map(x => `<li>Bill ${x.num}: ${esc(x.title)} — vote in ${x.voteIn} mo</li>`).join("");
 
@@ -258,6 +263,7 @@ function viewChamber() {
         <div class="cols">
             <div class="col-main">
                 ${panel(`BILL ${b.num}: ${esc(b.title)}`, `
+                    ${stageBar(billStage(b))}
                     <p>${esc(b.desc)}${b.amended ? ' <span class="hint">amended</span>' : ""}${b.sponsor === "player" ? ' <span class="hint up">your bill</span>' : ""}</p>
                     ${hemicycle(t)}
                     <div class="tally-row"><b class="c-for">FOR ${t.for}</b><b class="c-und">UNDECIDED ${t.und}</b><b class="c-against">AGAINST ${t.against}</b></div>

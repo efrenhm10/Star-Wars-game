@@ -30,12 +30,15 @@ function endMonth() {
 
     tickHistory();
     tickEconomy();
+    tickAttributes();
+    tickSpecial();
     tickPublic();
     tickGalaxy();
     tickOpinion();
     tickWar();
     tickLegislature();
     tickAppropriations();
+    tickIssues();
     tickPromises();
     tickOffice();
     tickPersonal();
@@ -55,7 +58,7 @@ function endMonth() {
 function tickEconomy() {
     tickPolicies();
     tickDistricts();
-    const target = 20 + (50 - approval()) * 0.8 + (G.planet.inequality - 50) * 0.3 + (50 - G.planet.housing) * 0.2 + G.situations.length * 3 + (G.autocrat ? 30 : 0);
+    const target = 20 + unrestBaseline() + (50 - approval()) * 0.8 + (G.planet.inequality - 50) * 0.3 + (50 - G.planet.housing) * 0.2 + G.situations.length * 3 + (G.autocrat ? 30 : 0);
     G.unrest = clamp(G.unrest + (target - G.unrest) * 0.1);
 }
 
@@ -359,7 +362,7 @@ function newOpponent(extra = 0) {
     G.opponent = localRival && chance(40)
         ? { name: localRival.name, faction: localRival.faction, npcId: localRival.id }
         : { name: randomName(G.worldKey), faction: worst };
-    G.opp = clamp(44 + world().difficulty * 2 + extra + rnd(-4, 4), 30, 75);
+    G.opp = clamp(44 + world().difficulty * 2 + oppositionBonus() + extra + rnd(-4, 4), 30, 78);
 }
 
 function runElection(ctx, bonus) {

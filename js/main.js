@@ -74,6 +74,15 @@ const ACTIONS = {
 
     logf: d => { ui.logFilter = d.t; render(); },
 
+    // Agenda
+    issue: d => resolveIssue(d.uid, d.a),
+    hometour: () => homeTour(),
+    special: d => specialAction(d.t),
+    "builder-open": () => openBuilderFor(null),
+    "builder-cancel": () => { ui.builder = null; ui.builderIssue = null; render(); },
+    "builder-submit": () => submitBuilder(ui.builder, ui.builderIssue),
+    gobill: d => { const b = G.bills.find(x => x.id === d.id); if (b) { ui.bill = b.id; ui.arenaSel = b.arena; view = "chamber"; render(); } },
+
     // Setup
     pickworld: d => { ui.app = null; renderWorldSetup(d.key); },
     pickrole: d => { ui.roleIndex = +d.i; ui.app = null; renderCreator(); },
@@ -92,6 +101,10 @@ document.addEventListener("click", e => {
 });
 
 document.addEventListener("change", e => {
+    const bf = e.target.dataset && e.target.dataset.bf;
+    if (bf && ui.builder) { ui.builder[bf] = ["amount", "years"].includes(bf) ? +e.target.value : e.target.value; render(); return; }
+    const bp = e.target.dataset && e.target.dataset.bp;
+    if (bp && ui.builder) { const s = new Set(ui.builder.provisions); if (e.target.checked) s.add(bp); else s.delete(bp); ui.builder.provisions = [...s]; render(); return; }
     const f = e.target.dataset && e.target.dataset.appf;
     if (f && ui.app) {
         ui.app[f] = f === "feature" ? +e.target.value : e.target.value;
@@ -145,7 +158,12 @@ function boot() {
     $("#continueBtn").style.display = hasSave() ? "" : "none";
     $("#newBtn").addEventListener("click", () => { renderWorldPicker(); showScreen("worlds"); });
     $("#continueBtn").addEventListener("click", () => {
-        if (loadGame() && G.record) { view = "office"; showScreen("play"); render(); }
+        if (loadGame() && G.record) {
+            // Bring older saves up to date.
+            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {};
+            if (world().special && G.assembly == null && G.lendingRate == null && G.intel == null && G.food == null && G.corpPower == null) initSpecial();
+            view = "office"; showScreen("play"); render();
+        }
         else toast("Old save", "That save is from an earlier version of the game. Start a new career.");
     });
     $("#backToWorlds").addEventListener("click", () => showScreen("worlds"));

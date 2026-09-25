@@ -159,7 +159,7 @@ function situationGroupEffect(gk) {
 }
 
 function budget() {
-    let income = 1 + (G.planet.employment - 40) * 0.03;
+    let income = (1 + (G.planet.employment - 40) * 0.03) * taxBaseMultiplier();
     let spend = 0;
     Object.entries(G.policies).forEach(([k, p]) => {
         const c = POLICIES[k].cost * p.level;
@@ -276,6 +276,13 @@ function setPolicy(k, newLevel, galactic = false) {
     const e = { f: {}, g: {} };
     Object.entries(defs[k].f || {}).forEach(([f, v]) => { e.f[f] = v * d * 6; });
     Object.entries(defs[k].g || {}).forEach(([gk, v]) => { e.g[gk] = v * d * 0.6; });
+    // Proud cultures resent policies that feel like threats to their way of life.
+    if (!galactic && d > 0 && CULTURAL_THREATS[k] && attr("identity") >= 4) { e.g.traditional = (e.g.traditional || 0) - CULTURAL_THREATS[k] * 6 * d * identityMultiplier(); e.indep = 2; }
+    // On Taris, the Upper City fights redistribution.
+    if (!galactic && d > 0 && world().special === "redistribution" && ["income_tax", "min_wage", "dividend", "housing", "labour", "corporate_tax"].includes(k)) {
+        e.g.elites = (e.g.elites || 0) - 4 * d * 2; e.g.business = (e.g.business || 0) - 3 * d * 2;
+        if (chance(45) && !G.inbox.some(x => x.id === "upper_city")) addDossier("upper_city", {});
+    }
     const ch = applyEffects(e);
     report(`Policy: ${defs[k].name}`, `You ${verb} ${defs[k].name} (now ${levelWord(newLevel)}). Effects will build over the coming months.`, ch);
     publish(defs[k].name.toLowerCase(), e.f);
@@ -318,6 +325,7 @@ const DISTRICT_TEMPLATES = [
 ];
 
 function makeDistricts(w) {
+    if (w.districts) return w.districts.map(d => ({ name: d.name, mix: d.mix, pop: Math.round(Object.values(d.mix).reduce((a, b) => a + b, 0) * 10) / 10, boost: 0 }));
     const scored = DISTRICT_TEMPLATES.map(t => {
         const fit = Object.entries(t.mix).reduce((s, [g, v]) => s + v * (w.groups[g] != null ? w.groups[g] : 1), 0);
         return { t, fit: fit + rnd(0, 3) };
@@ -370,5 +378,10 @@ function campaignDistrict(i, type) {
     const topGroup = Object.entries(d.mix).sort((a, b) => b[1] - a[1])[0][0];
     const ch = applyEffects({ funds: -opts.funds, g: { [topGroup]: 1 } });
     report(`Campaigning: ${d.name}`, opts.msg, ch);
+    // Campaign stops reveal problems nobody put on a list.
+    if (type !== "ads" && chance(type === "rally" ? 35 : 50)) {
+        const is = addIssue(districtIssue(d, "observed"), true);
+        if (is) report(`👁️ On the campaign trail: ${d.name}`, `${is.text} New issue discovered: ${ISSUE_CATS[is.cat].name}.`);
+    }
     render();
 }
