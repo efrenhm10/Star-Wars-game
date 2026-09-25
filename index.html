@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galactic Senate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="stars" aria-hidden="true"></div>
+
+<!-- Boot -->
+<section id="boot" class="screen active">
+    <div class="boot">
+        <div class="boot-kicker">A POLITICAL SIMULATION</div>
+        <h1>GALACTIC SENATE</h1>
+        <p class="boot-lede">Not a war game. A game about institutions, coalitions, voters, the press, constitutions — and the people you betrayed on the way up.</p>
+        <div class="boot-actions">
+            <button id="newBtn" class="primary big">Begin a political career</button>
+            <button id="continueBtn" class="secondary big">Continue saved career</button>
+        </div>
+        <div class="boot-grid">
+            <div><b>🕸️ Govern</b><span>Set policy on a living web of cause and effect. Effects take months; voters react today.</span></div>
+            <div><b>🏛️ Legislate</b><span>Whip delegations, trade votes, amend, leak, stall. Every promise is remembered.</span></div>
+            <div><b>🗳️ Campaign</b><span>Win districts, raise money, and owe the people who gave it.</span></div>
+            <div><b>⚖️ Rewrite the rules</b><span>Term limits, courts, clan rule, independence — if you can make it legitimate.</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- World selection -->
+<section id="worlds" class="screen">
+    <div class="setup-head">
+        <div>
+            <div class="boot-kicker">STEP 1 OF 2</div>
+            <h1>Choose your constituency</h1>
+            <p class="muted">You're not choosing a map. You're choosing the political system you'll have to survive.</p>
+        </div>
+        <button id="backToBoot" class="secondary">← Back</button>
+    </div>
+    <div id="worldList"></div>
+</section>
+
+<!-- World & role setup -->
+<section id="setup" class="screen">
+    <div class="setup-head">
+        <div>
+            <div class="boot-kicker">STEP 2 OF 2</div>
+            <h1 id="setupTitle"></h1>
+            <p id="setupTagline" class="muted"></p>
+        </div>
+        <button id="backToWorlds" class="secondary">← Worlds</button>
+    </div>
+    <div class="cols">
+        <div class="col-main"><section class="panel" id="constitutionCard"></section></div>
+        <div class="col-side">
+            <section class="panel">
+                <h3>Your politician</h3>
+                <label class="muted small" for="playerName">Name</label>
+                <input type="text" id="playerName" maxlength="40">
+                <label class="muted small" for="playerIdeology">Political philosophy</label>
+                <select id="playerIdeology"></select>
+                <p id="ideologyMotto" class="quote"></p>
+            </section>
+            <section class="panel">
+                <h3>Choose your role</h3>
+                <p class="muted small">Same planet, different game.</p>
+                <div id="roleList"></div>
+            </section>
+        </div>
+    </div>
+</section>
+
+<!-- Play -->
+<section id="play" class="screen">
+    <header id="hud"></header>
+    <nav id="dock"></nav>
+    <main id="view"></main>
+    <footer class="foot"><button id="menuBtn" class="link">Save &amp; return to menu</button></footer>
+</section>
+
+<div id="scene"></div>
+<div id="toasts"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/policy.js"></script>
+<script src="js/legislature.js"></script>
+<script src="js/politics.js"></script>
+<script src="js/events.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
