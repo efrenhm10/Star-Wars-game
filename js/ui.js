@@ -218,7 +218,7 @@ function viewChamber() {
     const clock = `${String(8 + (G.month * 7) % 11).padStart(2, "0")}:${String((G.year * 13 + G.month * 29) % 60).padStart(2, "0")}`;
     const header = `<div class="chamber-head"><span>${esc(arenaName(a).toUpperCase())} — ${clock}</span><span class="muted">${a === "senate" ? SENATE_SIZE : 100} seats</span></div>`;
     const catName = { yours: "✍️ Yours", major: "📜 Major galactic legislation", others: "🏛️ Introduced by others" };
-    const tabs = ["yours", "major", "others"].map(cat => { const list = bills.filter(x => billCategory(x) === cat); return list.length ? `<span class="tabcat">${catName[cat]}</span>` + list.map(x => `<button class="tab ${x.id === ui.bill ? "active" : ""}" data-act="bill" data-id="${x.id}">Bill ${x.num}</button>`).join("") : ""; }).join("");
+    const tabs = ["yours", "major", "others"].map(cat => { const list = bills.filter(x => billCategory(x) === cat); return list.length ? `<span class="tabcat">${catName[cat]}</span>` + list.map(x => `<button class="tab ${x.id === ui.bill ? "active" : ""}" data-act="bill" data-id="${x.id}">Bill ${x.num}${commitmentsFor(x).length ? " 🤝" : ""}</button>`).join("") : ""; }).join("");
     const done = G.completedBills || {};
     const introducible = Object.entries(BILLS).filter(([k, t]) => t.arena === a && !done[k] && !G.bills.some(x => x.key === k) && (!t.era || t.era.includes(G.era))).slice(0, 6);
     const canIntroduce = a === "senate" ? ["senator", "chancellor"].includes(G.office.kind) : G.office.kind !== "outsider";
@@ -281,6 +281,7 @@ function viewChamber() {
                         <button class="${!vote || vote === "abstain" ? "on" : ""}" data-act="vote" data-v="abstain">Abstain</button>
                         <button class="${vote === "against" ? "on against" : ""}" data-act="vote" data-v="against">Against</button>
                     </div>
+                    ${commitmentReminder(b)}
                     <p class="muted small">${pv ? "Your vote counts on the floor." : "You don't vote here, but your whip operation does."} Your constituencies and factions will judge the position you take.</p>`)}
                 ${committeeBox ? panel("Committee", committeeBox) : ""}
                 ${panel("Floor tactics", `

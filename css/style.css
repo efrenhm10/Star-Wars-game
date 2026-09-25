@@ -474,3 +474,6 @@ body[data-lens="underground"] .panel { background: rgba(24, 16, 10, .9); }
 .bill-preview { border: 1px solid var(--accent2); border-radius: 10px; padding: 12px; margin-top: 12px; background: #0c1526; }
 .bill-title { font-family: Georgia, serif; text-transform: none; letter-spacing: 0; color: #fff; font-size: 20px; }
 .attr { border-bottom: 1px dashed var(--line); padding: 6px 0; }
+
+.promise-note { margin-top: 10px; padding: 8px 10px; border: 1px solid var(--accent2); border-radius: 8px; background: rgba(214, 168, 74, 0.08); font-size: 0.85rem; }
+.promise-note p { margin: 4px 0; }

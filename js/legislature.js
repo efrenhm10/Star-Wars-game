@@ -195,6 +195,7 @@ function createBill(key, sponsor = null, custom = null) {
     G.bills.push(b);
     G.usedBills[key] = monthsNow();
     if (sponsor === "player" && G.record) G.record.billsIntroduced++;
+    announceCommitments(b);
     return b;
 }
 
@@ -221,8 +222,38 @@ function spendAP(n = 3) {
 function dir(b) { return b.playerVote === "for" ? 1 : b.playerVote === "against" ? -1 : 0; }
 
 function setVote(b, v) {
+    const broken = commitmentsFor(b).filter(c => c.want !== v);
     b.playerVote = v;
+    if (broken.length) toast("⚠️ That breaks your word", broken.map(c => `You promised ${c.who} you would vote ${c.want === "for" ? "YES" : "NO"} on this bill.`).join(" "));
     render();
+}
+
+// Every vote you've pledged on a bill: trades with other politicians and donor expectations.
+function commitmentsFor(b) {
+    const out = [];
+    (G.promises || []).filter(p => p.type === "trade" && p.billKey === b.key && !p.done).forEach(p => {
+        const n = npc(p.npcId);
+        if (n) out.push({ who: n.name, title: n.title || "", want: p.want || "for", why: `they backed you on ${p.bill}`, kind: "trade" });
+    });
+    (G.obligations || []).filter(o => o.billKey === b.key && !o.done).forEach(o => out.push({ who: o.donor, title: "donor", want: "for", why: "their money is behind you", kind: "donor" }));
+    return out;
+}
+
+function commitmentReminder(b) {
+    const cs = commitmentsFor(b);
+    if (!cs.length) return "";
+    return `<div class="promise-note">${cs.map(c => {
+        const ok = b.playerVote === c.want;
+        return `<p>${ok ? "✅" : "⚠️"} You promised <b>${esc(c.who)}</b> you would vote <b class="${c.want === "for" ? "c-for" : "c-against"}">${c.want === "for" ? "YES" : "NO"}</b> on this bill — ${esc(c.why)}.${ok ? "" : ` <span class="c-against">Your current position breaks that promise.</span>`}</p>`;
+    }).join("")}</div>`;
+}
+
+// When a bill you've pledged a vote on reaches the floor, your position is pre-set and you're reminded.
+function announceCommitments(b) {
+    const cs = commitmentsFor(b);
+    if (!cs.length) return;
+    if (!b.playerVote) b.playerVote = cs[0].want;
+    report("🤝 A promise comes due", `The ${b.title} is on the floor. ${cs.map(c => `You promised ${c.who} you would vote ${c.want === "for" ? "YES" : "NO"}.`).join(" ")} Your position has been set to keep your word — change it only if you mean to break it.`);
 }
 
 function persuade(b, n) {
@@ -402,13 +433,14 @@ function resolveBill(b) {
         log(`${passed ? "✅ Your bill passed" : "❌ Your bill failed"}: ${b.title} (${t.for}–${t.against}).`, "legislation");
     }
 
+    const kept = commitmentsFor(b).filter(c => c.kind === "trade" && c.want === vote).map(c => c.who);
     const betrayals = checkPromisesOnVote(b, vote);
     checkObligationsOnVote(b, vote);
 
     if (involved) publish(b.title, Object.fromEntries(Object.entries(b.stance).map(([k, s]) => [k, s * (vote === "for" ? 2 : vote === "against" ? -2 : -0.5)])));
     log(`Bill ${b.num}, ${b.title}: ${passed ? "PASSED" : "FAILED"} ${t.for}–${t.against} (${t.abstain} abstaining). You voted ${vote.toUpperCase()}.`, "legislation");
 
-    return { bill: b, t, passed, vote, changes, betrayals };
+    return { bill: b, t, passed, vote, changes, betrayals, kept };
 }
 
 function enactBill(b) {
@@ -441,7 +473,7 @@ function checkPromisesOnVote(b, vote) {
     G.promises.filter(p => p.type === "trade" && p.billKey === b.key).forEach(p => {
         const n = npc(p.npcId);
         if (!n) return;
-        if (vote === "for") {
+        if (vote === (p.want || "for")) {
             changeRel(n, 15, `You kept your word and voted for the ${b.title}.`);
         } else {
             changeRel(n, -45, `You betrayed them on the ${b.title} after they backed you on ${p.bill}.`);

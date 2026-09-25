@@ -132,6 +132,7 @@ function tickLegislature() {
         if (b.stuck) { if (chance(20)) b.stuck = null; else return; }
         if (G.agenda === b.id) b.momentum += 4;
         b.voteIn--;
+        if (b.voteIn === 1) commitmentsFor(b).filter(c => c.want !== b.playerVote).forEach(c => report("⏰ Vote next month", `The ${b.title} comes to a vote next month. You promised ${c.who} you would vote ${c.want === "for" ? "YES" : "NO"} — your position is currently ${(b.playerVote || "none").toUpperCase()}.`));
         // Delegations drift over time.
         arenaNpcs(b.arena).forEach(n => {
             if (!b.npcPos[n.id]) b.npcPos[n.id] = npcInitialPosition(n, b);

@@ -40,6 +40,7 @@ const SCENES = {
             <div class="tally-row"><b class="c-for">FOR ${t.for}</b><b class="c-und">ABSTAIN ${t.abstain}</b><b class="c-against">AGAINST ${t.against}</b></div>
             <h2 class="${ctx.passed ? "c-for" : "c-against"}">${ctx.passed ? "THE BILL PASSES" : "THE BILL FAILS"}</h2>
             <p>You voted <b>${ctx.vote.toUpperCase()}</b>.${ctx.bill.sponsor === "player" ? " It was your bill." : ""}</p>
+            ${ctx.kept && ctx.kept.length ? `<p class="c-for">🤝 You kept your word to ${ctx.kept.map(esc).join(", ")}.</p>` : ""}
             ${ctx.betrayals && ctx.betrayals.length ? `<p class="c-against">🗡️ ${ctx.betrayals.map(esc).join(", ")} will remember that you broke your word.</p>` : ""}
             ${ctx.vetoable ? `<p class="c-und">It passed over your objection. As head of government, you can sign it — or veto it.</p>` : ""}
             ${changeChips(ctx.changes)}`;
