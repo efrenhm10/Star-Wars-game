@@ -255,7 +255,7 @@ const HISTORY = [
         if (G.worldKey === "naboo") { startSiege("Trade Federation", 60, true, "The Trade Federation has established a blockade around Naboo. Its droid army is massing."); return; }
         frontScene("hist_blockade", {});
     } },
-    { bby: 32, m: 5, id: "no_confidence", run: () => frontScene("hist_no_confidence", {}) },
+    { bby: 32, m: 5, id: "no_confidence", run: () => { makePalpatineChancellor(); frontScene("hist_no_confidence", {}); } },
     { bby: 32, m: 7, id: "naboo_battle", run: () => {
         G.galaxy.naboo.stability = clamp(G.galaxy.naboo.stability + 25);
         if (G.worldKey === "naboo") {
@@ -302,7 +302,7 @@ const HISTORY = [
         const w = world();
         if (G.allegiance !== "hutt" && (w.region === "outer" || G.opinion.sep >= 20 || ["independence", "federalists"].includes(G.ideology))) addDossier("dooku_approach", {});
     } },
-    { bby: 24, m: 11, id: "term_extension", run: () => frontScene("hist_term_extension", {}) },
+    { bby: 24, m: 11, id: "term_extension", run: () => { G.chancLocked = true; frontScene("hist_term_extension", {}); } },
     { bby: 23, m: 3, id: "loyalist_committee", run: () => { if (roleCat() === "senate") addDossier("loyalist_committee", {}); } },
     { bby: 23, m: 9, id: "secessions", run: () => {
         ["geonosis", "mustafar", "sullust", "umbara", "felucia"].forEach(k => { if (G.galaxy[k] && k !== G.worldKey) G.galaxy[k].align = "separatist"; });
@@ -319,7 +319,7 @@ const HISTORY = [
     } },
     { bby: 22, m: 3, id: "amidala_attack", run: () => report("💥 Assassination attempt", "A bomb destroys Senator Amidala's ship on a Coruscant landing platform. She survives; her decoy does not.") },
     { bby: 22, m: 4, id: "emergency_ask", run: () => { if (roleCat() === "senate") addDossier("palpatine_emergency", {}); } },
-    { bby: 22, m: 5, id: "emergency_powers", run: () => frontScene("hist_emergency_powers", {}) },
+    { bby: 22, m: 5, id: "emergency_powers", run: () => { G.galConst.emergency = true; G.chancLocked = true; frontScene("hist_emergency_powers", {}); } },
     { bby: 22, m: 6, id: "geonosis", run: () => {
         G.era = "war"; G.war = true;
         applyEffects({ gal: { war: 30, military: 20, diplomacy: -15, trade: -10 } });
@@ -525,11 +525,7 @@ Object.assign(SCENES, {
             + voice("Senator Palpatine", "“Your Majesty, I will do everything I can to get the Senate to act.”")
             + `<p>The Queen moves a vote of no confidence in Chancellor Valorum.${cat === "senate" ? " The Chair recognises the Senator from " + esc(world().name) + "." : ""}</p>`;
         const after = backed => {
-            const val = G.npcs.find(n => n.canon === "valorum");
             const pal = canonNpc("palpatine");
-            if (val) { val.alive = false; }
-            if (pal) { G.chancellorId = pal.id; pal.title = "Supreme Chancellor"; pal.influence = 85; if (G.galaxy.naboo.senatorId === pal.id) { const s = makeNpc({ world: "naboo", title: "Senator of Naboo", arena: "senate" }); G.npcs.push(s); G.galaxy.naboo.senatorId = s.id; } }
-            G.chancTermLeft = 48;
             if (backed === "palpatine" && pal) changeRel(pal, 20, "Backed him for Chancellor in 32 BBY.");
             if (backed && backed !== "palpatine" && pal) changeRel(pal, -10, "Backed another candidate against him in 32 BBY.");
             report("Palpatine elected Supreme Chancellor", "Riding a wave of sympathy for Naboo, Senator Palpatine defeats Bail Antilles and Ainlee Teem.");
@@ -549,7 +545,7 @@ Object.assign(SCENES, {
     hist_term_extension: () => {
         const cat = roleCat();
         const pal = canonNpc("palpatine");
-        const done = v => { G.chancLocked = true; if (pal && v) changeRel(pal, v === "for" ? 12 : -15, `${v === "for" ? "Supported" : "Opposed"} extending his term.`); if (v) recordVote("Extension of the Chancellor's term", v); report("The Chancellor's term is extended", "Amid the Separatist Crisis, the Senate lets Palpatine remain in office beyond his term. There will be no Chancellor election."); };
+        const done = v => { if (pal && v) changeRel(pal, v === "for" ? 12 : -15, `${v === "for" ? "Supported" : "Opposed"} extending his term.`); if (v) recordVote("Extension of the Chancellor's term", v); report("The Chancellor's term is extended", "Amid the Separatist Crisis, the Senate lets Palpatine remain in office beyond his term. There will be no Chancellor election."); };
         return { tag: "GALACTIC SENATE — 24 BBY", title: "Extend the Chancellor's Term?",
             body: voice("Mas Amedda", "“In this time of crisis, continuity is essential.”") + npcVoice("mothma") + `<p>The Chancellor's term is ending. His allies propose suspending the election for the duration of the crisis.</p>`,
             choices: cat === "senate" ? [
@@ -565,7 +561,6 @@ Object.assign(SCENES, {
             + voice("Supreme Chancellor Palpatine", "“It is with great reluctance that I have agreed to this calling. I love democracy. I love the Republic.”")
             + npcVoice("bail") + npcVoice("mothma") + `<p>The Senate votes on granting the Chancellor emergency powers.</p>`;
         const done = v => {
-            G.galConst.emergency = true; G.chancLocked = true;
             const pal = canonNpc("palpatine");
             if (v === "for" && pal) changeRel(pal, 15, "Voted him emergency powers.");
             if (v === "against") { if (pal) changeRel(pal, -12, "Voted against his emergency powers."); ["mothma", "bail", "amidala"].forEach(k => { const n = canonNpc(k); if (n) changeRel(n, 8, "Stood against the emergency powers."); }); }
@@ -795,6 +790,17 @@ Object.assign(SCENES, {
         ]
     })
 });
+
+function makePalpatineChancellor() {
+    const val = G.npcs.find(n => n.canon === "valorum");
+    const pal = canonNpc("palpatine");
+    if (val) val.alive = false;
+    if (!pal || G.office.kind === "chancellor") return;
+    G.chancellorId = pal.id;
+    pal.title = "Supreme Chancellor"; pal.influence = 85; pal.arena = "senate";
+    if (G.galaxy.naboo.senatorId === pal.id) { const s = makeNpc({ world: "naboo", title: "Senator of Naboo", arena: "senate" }); G.npcs.push(s); G.galaxy.naboo.senatorId = s.id; }
+    G.chancTermLeft = 48;
+}
 
 function napNaboo(d, memory) {
     ["amidala", "bibble", "nass"].forEach(k => { const n = canonNpc(k); if (n) changeRel(n, k === "amidala" ? d : d / 2, k === "amidala" ? (memory || (d > 0 ? "Stood with Naboo during the blockade." : null)) : null); });

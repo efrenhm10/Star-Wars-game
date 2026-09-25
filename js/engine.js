@@ -79,7 +79,8 @@ function rivals() { return livingNpcs().filter(n => n.rel <= -30); }
 function termLeftLabel() {
     const o = G.office;
     if (o.termLeft == null) return KIND_INFO[o.kind].label;
-    const y = Math.floor(o.termLeft / 12), m = o.termLeft % 12;
+    const left = Math.max(0, o.termLeft);
+    const y = Math.floor(left / 12), m = left % 12;
     const parts = [];
     if (y) parts.push(`${y} yr${y > 1 ? "s" : ""}`);
     if (m) parts.push(`${m} mo`);

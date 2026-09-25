@@ -165,6 +165,7 @@ function tickPromises() {
         p.spawned = true;
         const n = npc(p.npcId);
         const t = BILLS[p.billKey];
+        if (!t) { if (!G.bills.some(b => b.key === p.billKey)) p.done = true; return; }
         if (!n || !n.alive || t.arena !== arena()) { p.done = true; return; }
         if (!G.bills.some(b => b.key === p.billKey)) createBill(p.billKey, n.id);
         report("A debt comes due", `${n.name}'s ${t.title} reaches the floor. You promised to vote FOR it.`);
@@ -182,7 +183,7 @@ function tickPromises() {
     G.obligations.filter(o => !o.done && !o.asked && monthsNow() >= o.due).forEach(o => {
         o.asked = true;
         const t = BILLS[o.billKey];
-        if (t.arena !== arena()) { o.done = true; return; }
+        if (!t || t.arena !== arena()) { o.done = true; return; }
         if (!G.bills.some(b => b.key === o.billKey)) createBill(o.billKey);
         addDossier("lobbyist", { donor: o.donor, billKey: o.billKey });
     });
@@ -407,7 +408,10 @@ function chancellorShare(incumbent) {
 function electNpcChancellor(endorsedId) {
     const cands = livingNpcs().filter(n => n.arena === "senate").sort((a, b) => b.influence - a.influence).slice(0, 3);
     let winner = cands[0];
-    if (endorsedId) {
+    // The canon backbone: Palpatine keeps the Chancellery unless the player takes it from him.
+    const pal = canonNpc("palpatine");
+    if (pal && G.hist.no_confidence && G.era !== "newrepublic") { winner = pal; }
+    else if (endorsedId) {
         const e = npc(endorsedId);
         if (e && chance(55)) winner = e;
     } else {

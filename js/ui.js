@@ -115,8 +115,8 @@ function advisories() {
     if (G.heat > 25) out.push("“Journalists are sniffing around. Something is going to come out.”");
     if (G.treasury < 0 && governing()) out.push(`“The treasury is in deficit (${G.treasury.toFixed(1)}B). Interest is eating the budget.”`);
     if (KIND_INFO[o.kind].legit && G.legitimacy < 35) out.push(`“Your legitimacy is dangerously low (${Math.round(G.legitimacy)}). A challenge is coming.”`);
-    G.obligations.filter(x => !x.done && G.bills.some(b => b.key === x.billKey)).forEach(x => out.push(`“${x.donor} is watching how you vote on the ${BILLS[x.billKey].title}.”`));
-    G.promises.filter(p => p.type === "trade" && G.bills.some(b => b.key === p.billKey)).forEach(p => { const n = npc(p.npcId); if (n) out.push(`“You promised ${n.name} your vote on the ${BILLS[p.billKey].title}.”`); });
+    G.obligations.filter(x => !x.done && G.bills.some(b => b.key === x.billKey)).forEach(x => out.push(`“${x.donor} is watching how you vote on the ${billTitle(x.billKey)}.”`));
+    G.promises.filter(p => p.type === "trade" && G.bills.some(b => b.key === p.billKey)).forEach(p => { const n = npc(p.npcId); if (n) out.push(`“You promised ${n.name} your vote on the ${billTitle(p.billKey)}.”`); });
     if (G.ap >= capitalCap() - 2) out.push("“Your political capital is maxed out. Spend it or lose it.”");
     if (!out.length) out.push("“Quiet month. Enjoy it — it won't last.”");
     return out.slice(0, 6).map(t => `<div class="advice"><b>${esc(cos)}</b>${esc(t)}</div>`).join("");
@@ -500,8 +500,8 @@ function viewCampaign() {
             </div></div>`;
     }).join("");
     const donors = Object.entries(DONOR_SOURCES).map(([k, s]) => `<button class="tactic" data-act="fund" data-src="${k}" ${G.ap < 3 ? "disabled" : ""}>${s.icon} ${s.name} <em>3 capital · ${s.amount[0]}–${s.amount[1]}M</em><span>${s.note}</span></button>`).join("");
-    const obligations = G.obligations.filter(x => !x.done).map(x => `<li><b>${esc(x.donor)}</b> expects your vote for the ${BILLS[x.billKey].title}${x.asked ? "" : " (they haven't asked yet)"}</li>`).join("");
-    const promises = G.promises.map(p => { const n = npc(p.npcId); return n ? `<li>${p.type === "trade" ? `You'll vote for <b>${BILLS[p.billKey].title}</b> — promised to` : "You owe a favour to"} <b>${esc(n.name)}</b></li>` : ""; }).join("");
+    const obligations = G.obligations.filter(x => !x.done).map(x => `<li><b>${esc(x.donor)}</b> expects your vote for the ${billTitle(x.billKey)}${x.asked ? "" : " (they haven't asked yet)"}</li>`).join("");
+    const promises = G.promises.map(p => { const n = npc(p.npcId); return n ? `<li>${p.type === "trade" ? `You'll vote for <b>${billTitle(p.billKey)}</b> — promised to` : "You owe a favour to"} <b>${esc(n.name)}</b></li>` : ""; }).join("");
     const donorList = Object.entries(G.donors).map(([n, d]) => `<li>${esc(n)} — ${d.given}M cr ${d.rel < 0 ? '<span class="c-against">(hostile)</span>' : ""}</li>`).join("");
     return `<div class="cols"><div class="col-main">
         ${panel("The race", electedPath ? `

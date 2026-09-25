@@ -84,6 +84,11 @@ const BILLS = {
         g: { youth: 4, workers: 3, elites: -4 }, p: { crime: -2 }, i: { agencies: 10 }, trustOnPass: 5, heatOnPass: 6 }
 };
 
+function billTitle(key) {
+    const b = G.bills.find(x => x.key === key);
+    return b ? b.title : BILLS[key] ? BILLS[key].title : "their bill";
+}
+
 const LEAN_WORDS = { 3: "champions", 2: "supports", 1: "leans for", 0: "undecided", "-1": "leans against", "-2": "opposes", "-3": "fiercely opposes" };
 
 
@@ -185,6 +190,7 @@ function createBill(key, sponsor = null, custom = null) {
     gateBill(b);
     G.bills.push(b);
     G.usedBills[key] = monthsNow();
+    if (sponsor === "player" && G.record) G.record.billsIntroduced++;
     return b;
 }
 
@@ -326,7 +332,6 @@ function introduceBill(key) {
     if (!spendAP(6)) return;
     applyEffects({ influence: -6 });
     const b = createBill(key, "player");
-    G.record.billsIntroduced++;
     report("Bill introduced", `You introduce the ${b.title} (Bill ${b.num}). The vote is in three months.`);
     render();
 }

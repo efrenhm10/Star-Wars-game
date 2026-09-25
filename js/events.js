@@ -523,7 +523,7 @@ const EVENTS = {
         weight: 0, deadline: 2,
         build: (g, c) => ({
             title: "A Visit from the Lobbyist", from: c.donor, topic: "lobbying",
-            text: `“Senator, we've been proud supporters of your campaign. We'd appreciate your support for the ${BILLS[c.billKey].title}.”`,
+            text: `“Senator, we've been proud supporters of your campaign. We'd appreciate your support for the ${billTitle(c.billKey)}.”`,
             choices: [
                 { label: "Promise your vote", run: () => { const b = G.bills.find(x => x.key === c.billKey); if (b) b.playerVote = "for"; }, msg: "You'll vote FOR it. They smile the smile of people who expected nothing less." },
                 { label: "Stay noncommittal", msg: "They'll be watching how you vote." },

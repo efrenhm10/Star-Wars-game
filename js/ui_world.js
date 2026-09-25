@@ -322,9 +322,9 @@ function viewGalaxy() {
             <text x="${p.x}" y="${p.y + 22}" text-anchor="middle" class="gl ${playable ? "" : "dim"}">${worldName(k)}</text>
         </g>`;
     }).join("");
-    const rings = `<ellipse cx="420" cy="322" rx="131" ry="95" class="ring"/><ellipse cx="420" cy="322" rx="255" ry="185" class="ring"/><ellipse cx="420" cy="322" rx="390" ry="282" class="ring"/>
-        <text x="296" y="326" text-anchor="middle" class="rl">CORE</text><text x="172" y="326" text-anchor="middle" class="rl" transform="rotate(-90 172 326)">MID RIM</text><text x="40" y="326" text-anchor="middle" class="rl" transform="rotate(-90 40 326)">OUTER RIM</text>`;
-    const legend = byAlign ? `<div class="legend">${Object.entries(ALIGN_NAMES).filter(([k]) => Object.values(G.galaxy).some(s => s.align === k)).map(([k, v]) => `<span><i style="background:${ALIGN_COLORS[k]}"></i>${v}</span>`).join("")}</div>` : `<div class="legend"><span><i style="background:var(--for)"></i>Stable</span><span><i style="background:var(--und)"></i>Strained</span><span><i style="background:var(--against)"></i>Unstable</span></div>`;
+    const rings = `<ellipse cx="420" cy="322" rx="131" ry="95" class="ring"/><ellipse cx="420" cy="322" rx="255" ry="185" class="ring"/><ellipse cx="420" cy="322" rx="390" ry="282" class="ring"/>`;
+    const legend0 = byAlign ? `<div class="legend">${Object.entries(ALIGN_NAMES).filter(([k]) => Object.values(G.galaxy).some(s => s.align === k)).map(([k, v]) => `<span><i style="background:${ALIGN_COLORS[k]}"></i>${v}</span>`).join("")}</div>` : `<div class="legend"><span><i style="background:var(--for)"></i>Stable</span><span><i style="background:var(--und)"></i>Strained</span><span><i style="background:var(--against)"></i>Unstable</span></div>`;
+    const legend = legend0.replace(/<\/div>$/, `<span class="muted">Rings, from the centre: Core · Mid Rim · Outer Rim</span></div>`);
     const s = G.galaxy[sel];
     const w = WORLDS[sel] || BACKGROUND_WORLDS[sel];
     const sen = sel === G.worldKey && s.senatorId === "player" ? null : worldSenator(sel);
