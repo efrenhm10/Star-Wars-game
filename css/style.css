@@ -371,3 +371,84 @@ td.num { text-align: right; white-space: nowrap; }
     .scene-card h2 { font-size: 24px; }
     .tally-row { font-size: 16px; }
 }
+
+/* ── History, characters and powers ────────────────────────────── */
+
+.stars-r { color: var(--accent2); letter-spacing: 1px; }
+.stars-r i { color: #3a4a66; font-style: normal; }
+.wc-head { display: flex; justify-content: space-between; align-items: baseline; }
+.wc-gov { color: var(--accent); font-size: 12.5px; }
+.wc-stats { display: flex; flex-direction: column; gap: 1px; }
+.dossier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 18px; }
+.rating-rows { display: grid; grid-template-columns: auto auto; gap: 2px 10px; }
+.role-card span { display: block; }
+
+.creator { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; }
+.creator-portrait { display: flex; justify-content: center; margin-bottom: 10px; }
+.creator-portrait svg { border-radius: 12px; border: 1px solid var(--line2); }
+.species-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.species-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; font-size: 12px; }
+.species-btn.on { border-color: var(--accent); background: #0f2436; }
+.species-btn svg { border-radius: 6px; }
+.swatches { display: flex; gap: 5px; flex-wrap: wrap; margin: 4px 0 8px; }
+.sw { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
+.sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.row.nowrap { flex-wrap: nowrap; }
+.small-btn { width: auto; padding: 8px 10px; }
+
+.hud-portrait svg { border-radius: 8px; border: 1px solid var(--line2); display: block; }
+.portrait { flex-shrink: 0; }
+.npc-head { gap: 10px; }
+.npc-head .portrait { border-radius: 6px; }
+.npc-id { flex: 1; min-width: 0; }
+.canon-tag { color: var(--accent2); }
+.quote-line { font-style: italic; color: #c9d4e6; }
+.npc.canon { background: linear-gradient(90deg, #14203a, #0a1424); }
+.self-portrait { display: flex; justify-content: center; margin-bottom: 8px; }
+.self-portrait svg { border-radius: 10px; }
+.mini-npc { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
+.mini-npc svg { border-radius: 6px; }
+
+.era-banner { border: 1px solid var(--line2); border-left: 3px solid var(--accent2); background: var(--panel); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-size: 13px; }
+.era-banner b { font-family: var(--head); letter-spacing: 1.5px; color: var(--accent2); }
+.panel.danger { border-color: var(--against); box-shadow: 0 0 0 1px #e8596a33; }
+
+.opinion { display: flex; gap: 10px; justify-content: space-around; text-align: center; margin: 8px 0; }
+.opinion b { display: block; font-family: var(--head); font-size: 26px; }
+.opinion span { font-size: 12px; color: var(--muted); }
+.opinion-bar { display: flex; height: 12px; border-radius: 8px; overflow: hidden; margin: 6px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; padding: 6px 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.voice { border-left: 2px solid var(--accent); padding-left: 10px; }
+.voice b { color: var(--accent); display: block; font-family: var(--head); letter-spacing: 1px; }
+
+.lens-banner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-family: var(--head); letter-spacing: 3px; font-size: 18px; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--line2); background: var(--panel); }
+.lens-banner span:last-child { font-size: 13px; letter-spacing: 1px; color: var(--muted); }
+.schema { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+.schema summary { cursor: pointer; }
+.pork, .project { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 8px 0; background: #0a1424; }
+.fin .mini { font-size: 11.5px; }
+.tactic.noauth { border-style: dashed; opacity: .7; }
+.record { font-family: Georgia, serif; }
+.record-title { font-family: var(--head); letter-spacing: 4px; color: var(--accent2); font-size: 15px; }
+.record h2 { color: #fff; font-family: Georgia, serif; }
+.record li { margin: 4px 0; }
+
+/* Each kind of office looks like its own institution. */
+body[data-lens="senate"]      { --accent: #b48cf0; }
+body[data-lens="executive"]   { --accent: #45d0e8; }
+body[data-lens="court"]       { --accent: #e0b050; --line2: #4a3a24; }
+body[data-lens="chancellery"] { --accent: #e86060; --line2: #4a2a30; }
+body[data-lens="city"]        { --accent: #4fd1a8; }
+body[data-lens="movement"]    { --accent: #f08a3a; }
+body[data-lens="underground"] { --accent: #f08a3a; --line2: #4a3020; }
+body[data-lens="command"]     { --accent: #9ccf5a; --line2: #34462a; }
+body[data-lens="court"] .panel { background: rgba(28, 20, 14, .88); }
+body[data-lens="senate"] .panel { background: rgba(20, 16, 36, .86); }
+body[data-lens="chancellery"] .panel { background: rgba(30, 14, 20, .86); }
+body[data-lens="command"] .panel { background: rgba(16, 24, 14, .88); }
+body[data-lens="underground"] .panel { background: rgba(24, 16, 10, .9); }
+
+@media (max-width: 760px) {
+    .creator { grid-template-columns: 1fr; }
+}

@@ -1,79 +1,155 @@
 # Galactic Senate
 
-A political simulation set in a galactic republic. You're a politician, not a
-warrior. You work through institutions, elections, legislation, factions, the
-press, constitutional crises and personal relationships across a galaxy where
-every decision touches something else.
+A political history of the galaxy. You start in **32 BBY** as one politician
+in a working Republic: a senator, a queen, a governor, a clan leader, a mayor
+or an agitator on one of 25 worlds. The Star Wars timeline moves forward
+around you while your own career runs alongside it.
 
-It takes inspiration from **Democracy 3** (a policy web with delayed effects,
-voter groups and situations) and **The Political Process** (district-by-district
-campaigning and whipping individual legislators).
+> You are not the protagonist of Star Wars. You are a protagonist in the Star
+> Wars galaxy.
+
+It takes inspiration from **Democracy 3** (the policy web, delayed effects,
+voter groups, situations) and **The Political Process** (whipping
+legislators, district campaigns).
 
 ## Running it
 
-Open `index.html` in a browser. It needs no build step and no server. The game
-autosaves to your browser every month.
+Open `index.html` in a browser. There's no build step and no server. The game
+autosaves every month.
 
-## What's in it
+## Two timelines
 
-**24 playable worlds, 55 roles.** Every world ships with its own constitution:
-government type, term lengths and limits, how hard it is to amend, judicial
-independence, and who controls the military. The same planet plays very
-differently depending on the role:
+**The canon backbone** happens on schedule:
 
-- On Naboo you can be the Senator, the elected Queen, the appointed Governor or
-  the Opposition Leader.
-- On Mandalore you can be the Duchess, a Clan Leader, the Senator or the
-  independence movement's leader.
-- On Tatooine you start as the representative of one settlement, with no
-  planetary government at all, and can found one.
+- 32 BBY: trade route taxation, the blockade of Naboo, the vote of no
+  confidence, Palpatine becomes Chancellor.
+- Separatist crisis: Dooku, the Military Creation Act, the Emergency Powers
+  Act.
+- 22 BBY: Geonosis.
+- The Clone Wars: Christophsis, Ryloth, Kamino, banking deregulation, the
+  Sector Governance Decree, the Petition of the 2,000.
+- 19 BBY: Order 66 and the Empire.
+- Ghorman, the Rebellion, the dissolution of the Senate, Alderaan, Yavin,
+  Endor, the New Republic.
 
-**The public is not one number.** 15 constituencies (workers, farmers, youth,
-veterans, traditional communities and others) each judge you on the conditions
-they care about. Six election districts each have their own demographic mix.
+**Adaptive events** start from canon but follow what you've done. Mon Cala
+can stay united, go neutral, fall into civil war or join the Separatists,
+depending on the coalition you built between the Mon Calamari and the Quarren.
+Onderon's coup and Mandalore's fall work the same way.
 
-**Policy web.** 26 planetary policies are set with sliders. Their effects build
-up over months, and they have budget costs. When conditions cross a threshold
-(a housing crisis, a crime wave, a debt crisis, an economic boom), a situation
-switches on and pushes back on the system. An executive can enact policy by
-decree with political capital, which risks court injunctions. Other roles can
-send a change to the legislature as a bill. The Supreme Chancellor sets
-galactic policy.
+**Your own history**, meaning your laws, appropriations, votes, betrayals and
+allegiances, is written into a record like this one:
 
-**The legislature.** The Senate has 433 seats; planetary legislatures have 100.
-Seats belong to faction blocs plus named delegations who remember you. You can
-persuade, promise favours, trade votes, give speeches, amend, leak or send a
-bill to committee. If you break a promise, that person becomes a rival.
+> *Served as Senator of Corellia, 32–18 BBY. Introduced 47 pieces of
+> legislation. Secured 8.2 billion credits in Republic appropriations.
+> Supported the Clone Army Authorization. Opposed the Emergency Powers Act.
+> Signed the Petition of the 2,000. Arrested: 19 BBY.*
 
-**Money and the press.** Every donor source comes with strings attached;
-corporations and unions come back later wanting votes. Seven outlets with their
-own politics each spin your decisions their own way.
+## Canon characters
 
-**Constitutional change.** You can remove term limits, reform the courts,
-grant emergency powers, replace clan rule with democracy (or the reverse), or
-hold an independence referendum. Each change must pass the legislature, then a
-referendum, then judicial review. If you lose an election, you choose between
-conceding, challenging the result, or trying to stay in power. The military may
-decide how that turns out.
+Padmé Amidala, Palpatine, Bail and Breha Organa, Mon Mothma, Mas Amedda, Sio
+Bibble, Boss Nass, Jar Jar Binks, Garm Bel Iblis, Satine Kryze, Pre Vizsla,
+Bo-Katan, King Yos Kolina, Prince Lee-Char, Nossor Ri, Tikkes, Meena Tills,
+Orn Free Taa, Cham Syndulla, Tarfful, Poggle the Lesser, Lama Su, Mina
+Bonteri, the Gerreras, Riyo Chuchi, Onaconda Farr, Lott Dod, Nute Gunray,
+Count Dooku, San Hill, Jabba, Mother Talzin, Onara Kuat, Tarkin, and Jedi
+generals in wartime.
 
-**Careers and dynasty.** You can climb from Local Council Member to Senator,
-Minister and Supreme Chancellor, or fall to lobbyist, journalist, exile or
-prisoner. When your character dies, retires or is removed, a successor
-inherits a galaxy shaped by your programmes, laws, amendments and grudges.
+Each has an ideology, objectives, fears and a loyalty. Each remembers what
+you did: *"I remember how you voted during the Naboo emergency."* They speak to
+you according to your relationship and your world's allegiance. Your role
+decides which of them come into your life. If you take a canon character's
+office (Queen of Naboo, say), they're still in the galaxy under another
+title.
 
-**A living galaxy.** Worlds you don't play still have stability, crises and
-independence movements, and their problems end up on your desk.
+## Your character
+
+You choose from the species that actually live on your world: Human, Gungan,
+Mon Calamari, Quarren, Wookiee, Twi'lek, Togruta, Zabrak, Chagrian, Jawa,
+Rodian, Ugnaught, Geonosian, Kaminoan, Mustafarian, Sullustan, Dathomirian or
+Selkath. You set skin or fur, eyes, hair, horns or lekku, markings (including
+Naboo royal face paint), accessories, attire and age, with a live portrait.
+Your heirs inherit your look.
+
+## Every role is a different game
+
+Each role defines its powers, responsibilities, budget, legislative,
+appointment, military and diplomatic authority, term rules and constitutional
+constraints. Each has its own interface theme.
+
+- **Senate Desk (senator).**
+  - *Bring it home:* each world has pork projects, like "Corellia Shipyard
+    Modernisation, 300M credits, +4,000 jobs". You request them, find
+    cosponsors (who want votes in return), lobby the Finance Committee, and
+    pitch the Chancellor before the Month 10 appropriations markup.
+  - *Committees:* Finance, Defense, Intelligence, Foreign Affairs, Judiciary,
+    Commerce. You can win seats and chairs. A hostile chair can bottle up
+    your bill; as chair, you can fast-track or bury bills.
+  - Oversight hearings, coalitions by region, and foreign affairs.
+- **Executive (governor, first minister).**
+  - Projects with real financing: "Projected cost 2.4B, available 0.8B". You
+    raise taxes, borrow, cut a program, request Republic funding, or bring in
+    private investment.
+  - Executive orders, cabinet appointments, public safety, economic
+    development.
+- **Royal Court (monarch).**
+  - Monarchies differ. Alderaan is constitutional: you appoint the Prime
+    Minister and grant or withhold assent. Naboo's queen is elected and
+    governs. Mon Cala, Onderon and Geonosis are absolute and hereditary.
+- **Chancellery.** Cabinet, legislative agenda, deploying the military,
+  treaties, sanctions, recognising governments.
+- **City Hall (mayor, settlement representative).**
+  - You run city services.
+  - "Declare war" is greyed out: *you do not possess this authority. Petition
+    the planetary government.*
+- **Movement, opposition, and the underground after 19 BBY.**
+
+**Information depends on your role.** A governor sees "food reserves: 11 days".
+A senator gets "the government reports a critical shortage". The Chancellor
+and the Intelligence Committee get classified forecasts, which they can
+share, hide or leak.
+
+**Your philosophy changes your toolbox.** In the same crisis, a Corporatist can
+hire private security, a Social Reformer can impose price controls, and a
+Militarist can censor wartime news.
+
+## War comes home
+
+- **Planetary opinion.** Republic loyalists, Separatists and neutrals shift
+  with hardship, corruption, blockades, occupation and aid. That feeds the
+  "Which side are we on?" crisis, decided by the legislature, a referendum or
+  a decree.
+- **Attacks and blockades.** Food, medicine and fuel run down; there's
+  occupation and liberation.
+- **Petitioning the Senate for help.** Sponsors attach conditions ("support
+  our tariff bill", "humanitarian aid only", "the Chancellor's office is
+  concerned about the cost") while the attack continues. If the Senate says
+  no, you choose: defend yourselves, negotiate, ask another world, join the
+  Separatists, declare neutrality, or evacuate.
+- **Wartime measures.** Conscription, censorship, martial law, war taxes and
+  nationalisation. Once the war ends, people ask: *"When are you giving our
+  rights back?"*
+- **War elections.** Your opponent runs on your failures. You can postpone
+  the election, if your constitution allows it; otherwise it's a
+  constitutional crisis.
+- **19 BBY: the Empire.** You can accept the Empire, resist politically, try
+  to keep your world's autonomy, collaborate publicly while resisting
+  privately, or join the underground.
 
 ## Code layout
 
 | File | Contents |
 |---|---|
-| `js/data.js` | Constituencies, factions, institutions, media, donors, the 24 worlds and their constitutions |
-| `js/engine.js` | Game state, derived values, `applyEffects()` (how one decision ripples through every system), NPCs, save/load |
-| `js/policy.js` | Policy web, situations, budget, districts |
-| `js/legislature.js` | Bills, seat blocs, tallies, lobbying tactics, vote resolution |
-| `js/politics.js` | Monthly simulation, elections, legitimacy, Chancellor, constitutional amendments, careers, succession |
-| `js/events.js` | Dossiers: decisions with deadlines |
-| `js/scenes.js` | Full-screen moments: votes, election night, defeat, referendums, revolution, succession |
-| `js/actions.js` | Fundraising, press, relationships, diplomacy |
-| `js/ui.js`, `js/main.js` | Views, rendering and input |
+| `js/worlds.js` | The 25-world database (schema above) and background worlds |
+| `js/species.js` | Species, appearance options, procedural SVG portraits, names |
+| `js/canon.js` | Canon characters: ideology, objectives, fears, loyalty, voice |
+| `js/timeline.js` | The calendar, historical events, opinion and allegiance, war, historical scenes, the Empire |
+| `js/canon_events.js` | Encounters with canon characters, petition sponsors, Imperial-era dossiers |
+| `js/powers.js` | Role schema, committees, pork, projects, court, chancellery, city hall, underground |
+| `js/data.js` | Constituencies, factions, institutions, media, donors |
+| `js/engine.js` | Game state and `applyEffects()`, the ripple through every system |
+| `js/policy.js` | Policy web, wartime measures, situations, budget, districts |
+| `js/legislature.js` | Bills, blocs, lobbying, votes, committee gates |
+| `js/politics.js` | Monthly simulation, elections, constitution, careers, dynasty |
+| `js/events.js`, `js/scenes.js` | Dossiers and full-screen scenes |
+| `js/ui.js`, `js/ui_world.js`, `js/main.js` | Interface and input |

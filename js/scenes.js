@@ -43,7 +43,11 @@ const SCENES = {
             ${ctx.betrayals && ctx.betrayals.length ? `<p class="c-against">🗡️ ${ctx.betrayals.map(esc).join(", ")} will remember that you broke your word.</p>` : ""}
             ${ctx.vetoable ? `<p class="c-und">It passed over your objection. As head of government, you can sign it — or veto it.</p>` : ""}
             ${changeChips(ctx.changes)}`;
-        const choices = ctx.vetoable ? [
+        const choices = ctx.vetoable && isConstitutionalMonarch() ? [
+            { label: "Grant royal assent", hint: "Constitutional convention.", go: () => { const ch = enactBill(ctx.bill); report("Royal assent granted", `${ctx.bill.title} becomes law.`, ch); } },
+            { label: "Request reconsideration", hint: "Send it back to the legislature once.", go: () => { const b = createBill(ctx.bill.key, null, ctx.bill.fx); b.voteIn = 3; report("Returned to the legislature", `The Crown asks the legislature to reconsider ${ctx.bill.title}.`, applyEffects({ i: { legislature: -4 } })); } },
+            { label: "Withhold assent", hint: "A constitutional crisis.", go: () => { report("Assent withheld", `The Crown refuses ${ctx.bill.title}. Constitutional scholars are aghast.`, applyEffects({ legitimacy: -15, i: { legislature: -15, courts: -8 }, trust: -6 })); } }
+        ] : ctx.vetoable ? [
             { label: "Sign it into law", hint: "Respect the legislature's decision.", go: () => { const ch = enactBill(ctx.bill); applyEffects({ i: { legislature: 3 } }); report("Signed into law", `${ctx.bill.title} becomes law despite your objection.`, ch); } },
             { label: "Veto the bill", hint: "Legislature trust −10; its supporters won't forget.", go: () => {
                 const g = {};
@@ -66,15 +70,20 @@ const SCENES = {
                 <div class="vs">VS</div>
                 <div><b>${esc(G.opponent ? G.opponent.name : "The challenger")}</b><span class="muted">${G.opponent ? FACTIONS[G.opponent.faction].name : ""} · strength ${Math.round(G.opp)}</span></div>
             </div>
+            ${wartime() ? `<p class="small"><b>WAR ELECTION.</b> ${G.warRecord > 0 ? `You campaign: “I secured our world and kept our cities running.”` : ""} Your opponent campaigns: “${G.occupied || G.siege ? "The current government failed to protect our world." : "Only we can keep this world safe."}”</p>` : ""}
             <p>Internal polling: <b>${pct(proj)}</b> ${proj > 50 ? "— a narrow path to victory." : "— you are behind."} Campaign funds: <b>${G.funds.toFixed(1)}M cr</b>.</p>
             <p class="muted">Choose your closing strategy.</p>`;
         const choices = [
-            { label: "Run on your record", hint: approval() > 50 ? "Your record is an asset." : "Risky: your record is a liability.", go: () => runElection(ctx, (approval() - 50) * 0.15) },
+            { label: "Run on your record", hint: approval() > 50 ? "Your record is an asset." : "Risky: your record is a liability.", go: () => runElection(ctx, (approval() - 50) * 0.15 + (wartime() ? G.warRecord * 1.5 - (G.occupied ? 10 : G.siege ? 5 : 0) : 0)) },
             { label: "Go negative on your opponent", hint: "+3.5 points, but public trust −4.", go: () => { applyEffects({ trust: -4 }); runElection(ctx, 3.5); } },
             { label: "Pour every credit into ads", hint: `Spends all ${G.funds.toFixed(1)}M cr.`, disabled: G.funds < 1, go: () => { const b = Math.min(7, G.funds * 0.9); G.funds = 0; runElection(ctx, b); } },
             { label: `Mobilise your base: ${GROUPS[top].name}`, hint: "+2.5 points and a boost with them.", go: () => { applyEffects({ g: { [top]: 5 } }); runElection(ctx, 2.5); } },
             { label: "Withdraw from the race", hint: "Leave on your own terms.", go: () => { rememberElectedSpec(); frontScene("outsider_path", { reason: "You withdraw from the race." }); } }
         ];
+        if (wartime() && ctx.mode !== "candidate") choices.splice(4, 0, { label: "Postpone the election (wartime)", hint: G.const.emergency || G.emergencyDeclared > 0 ? "Your emergency powers allow it." : "The constitution may not allow it.", go: () => {
+            if (G.const.emergency || G.emergencyDeclared > 0 || G.const.warPostpone) { G.office.termLeft = 12; report("Election postponed", "The election is postponed for a year because of the war.", applyEffects({ trust: -6, legitimacy: -6, f: { reformers: -6, militarists: 3 } })); }
+            else frontScene("postpone_crisis", ctx);
+        } });
         return { tag: recall ? "RECALL ELECTION" : "ELECTION", title: "The Final Stretch", body, choices };
     },
 
@@ -340,11 +349,33 @@ const SCENES = {
         ]
     }),
 
+    postpone_crisis: ctx => ({
+        tag: "CONSTITUTIONAL CRISIS", title: "The Constitution Does Not Allow Postponement",
+        body: `<p>There is no provision for postponing elections in wartime. The courts are asked to rule.</p>`,
+        choices: [
+            { label: "Ask the courts to allow it", go: () => {
+                if (chance(100 - G.const.judicial)) { G.office.termLeft = 12; report("The courts allow postponement", "A pliant court finds an emergency exception.", applyEffects({ trust: -8, i: { courts: -10 } })); }
+                else frontScene("postpone_refused", ctx);
+            } },
+            { label: "Hold the election as scheduled", go: () => frontScene("campaign", ctx) },
+            { label: "Postpone it anyway", hint: "Defy the constitution.", go: () => goAutocrat("postponing an election the constitution required") }
+        ]
+    }),
+
+    postpone_refused: ctx => ({
+        tag: "CONSTITUTIONAL CRISIS", title: "The Courts Say No",
+        body: `<p>The court rules that the election must go ahead, war or no war.</p>`,
+        choices: [
+            { label: "Respect the ruling", go: () => { applyEffects({ rep: 5, i: { courts: 6 } }); frontScene("campaign", ctx); } },
+            { label: "Defy the courts", go: () => goAutocrat("defying the courts over a wartime election") }
+        ]
+    }),
+
     game_over: () => {
         const d = G.dynasty;
         return {
             tag: "THE END", title: "A Political Dynasty",
-            body: `<p>${d.length} generation${d.length > 1 ? "s" : ""}, ${G.year} years of history on ${world().name}.</p>
+            body: `${historyRecord()}<p>${d.length} generation${d.length > 1 ? "s" : ""}, ${G.year} years of history on ${world().name}.</p>
                 <ol class="dynasty-list">${d.map(x => `<li><b>${esc(x.name)}</b> (Year ${x.from}–${x.end ?? G.year}) — ${x.offices.map(esc).join(" → ")}${x.legacy && x.legacy.length ? `<br><span class="muted">Legacy: ${x.legacy.map(esc).join("; ")}</span>` : ""}</li>`).join("")}</ol>`,
             choices: [{ label: "Return to the main menu", go: () => { clearSave(); quitToMenu(); } }]
         };

@@ -7,6 +7,7 @@ const $ = sel => document.querySelector(sel);
 
 const VIEWS = [
     { key: "office",     icon: "🗂️", name: "Office" },
+    { key: "powers",     icon: "⭐", name: "Powers" },
     { key: "chamber",    icon: "🏛️", name: "Chamber" },
     { key: "government", icon: "🕸️", name: "Policy" },
     { key: "public",     icon: "📊", name: "Public" },
@@ -26,7 +27,8 @@ function render() {
     if (!G) return;
     renderHud();
     renderDock();
-    const fn = { office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, charter: viewCharter, archive: viewArchive }[view];
+    document.body.dataset.lens = lens();
+    const fn = { powers: viewPowers, office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, charter: viewCharter, archive: viewArchive }[view];
     $("#view").innerHTML = fn();
     renderScene();
 }
@@ -64,10 +66,11 @@ function renderHud() {
     const gov = governing();
     $("#hud").innerHTML = `
         <div class="hud-id">
-            <div class="gen">GEN ${G.generation}</div>
+            <div class="hud-portrait">${renderPortrait(G.app, 46)}</div>
             <div>
                 <div class="hud-name">${esc(G.name)}</div>
-                <div class="hud-office">${esc(o.title)} · ${esc(world().name)}${G.autocrat ? ' · <span class="c-against">RULING WITHOUT MANDATE</span>' : ""}</div>
+                <div class="hud-office">${esc(o.title)} · ${esc(world().name)} · <span class="gen">GEN ${G.generation}</span>${G.autocrat ? ' · <span class="c-against">RULING WITHOUT MANDATE</span>' : ""}</div>
+                <div class="hud-office"><span style="color:${ALIGN_COLORS[G.allegiance]}">● ${ALIGN_NAMES[G.allegiance]}</span>${G.siege ? ' · <span class="c-against">⚔️ UNDER ATTACK</span>' : ""}${G.occupied ? ' · <span class="c-against">🏴 OCCUPIED</span>' : ""}</div>
             </div>
         </div>
         <div class="hud-stats">
@@ -81,6 +84,7 @@ function renderHud() {
         </div>
         <div class="hud-time">
             <div class="date">${dateStr()}</div>
+            <div class="term">${esc(ERAS[G.era].name)}</div>
             <div class="term">${o.termLeft != null ? `Term: ${termLeftLabel()}` : KIND_INFO[o.kind].label}</div>
             <button id="endMonth" class="primary" ${G.scenes.length ? "disabled" : ""}>End Month ▸</button>
         </div>`;
@@ -88,7 +92,8 @@ function renderHud() {
 
 function renderDock() {
     const inbox = G.inbox.length;
-    $("#dock").innerHTML = VIEWS.map(v => `<button class="dock-btn ${view === v.key ? "active" : ""}" data-act="view" data-v="${v.key}"><span class="di">${v.icon}</span><span>${v.name}</span>${v.key === "office" && inbox ? `<em class="badge">${inbox}</em>` : ""}</button>`).join("");
+    const pw = { senate: "🏛️", executive: "🏢", court: "👑", chancellery: "🎖️", city: "🏙️", movement: "✊", command: "🛡️", underground: "✊" }[lens()];
+    $("#dock").innerHTML = VIEWS.map(v => `<button class="dock-btn ${view === v.key ? "active" : ""}" data-act="view" data-v="${v.key}"><span class="di">${v.key === "powers" ? pw : v.icon}</span><span>${v.key === "powers" ? roleSchema().label : v.name}</span>${v.key === "office" && inbox ? `<em class="badge">${inbox}</em>` : ""}</button>`).join("");
 }
 
 
@@ -143,6 +148,7 @@ function viewOffice() {
                 <li>${Math.round(approval())}% approval on ${esc(world().name)}</li>
                 <li>${influenceLabel()[0].toUpperCase() + influenceLabel().slice(1)} influence${arena() === "senate" ? " in the Senate" : ""}</li>
                 <li>${seeking} faction${seeking === 1 ? "" : "s"} trying to get your support</li>
+                <li>Planetary opinion: ${Math.round(G.opinion.loyal)}% loyalist · ${Math.round(G.opinion.sep)}% separatist</li>
             </ul>
             <p class="muted small">${esc(o.desc || world().intro)}</p>
         </div>`;
@@ -153,6 +159,8 @@ function viewOffice() {
     return `
         <div class="cols">
             <div class="col-main">
+                <div class="era-banner"><b>${esc(ERAS[G.era].name)}</b> · ${esc(ERAS[G.era].note)}</div>
+                ${warPanel()}
                 ${panel("📂 Dossiers", inbox, "inbox")}
             </div>
             <div class="col-side">
@@ -194,7 +202,11 @@ function hemicycle(t) {
 }
 
 function viewChamber() {
-    const a = arena();
+    const own = arena();
+    const petitionOpen = G.bills.some(b => b.petition);
+    if (!ui.arenaSel || (ui.arenaSel === "senate" && own !== "senate" && !petitionOpen)) ui.arenaSel = own;
+    const a = own === "none" && petitionOpen ? "senate" : ui.arenaSel;
+    const arenaTabs = own !== "senate" && petitionOpen ? `<div class="tabs"><button class="tab ${a === own ? "active" : ""}" data-act="arena" data-a="${own}">${esc(arenaName(own))}</button><button class="tab ${a === "senate" ? "active" : ""}" data-act="arena" data-a="senate">Galactic Senate — your petition</button></div>` : "";
     if (a === "none") {
         return panel("No seat, no vote", `<p>As ${esc(G.office.title)}, you have no place on any legislative floor. Follow the votes in the Archive, or run for office from the Policy view.</p>`);
     }
@@ -210,7 +222,7 @@ function viewChamber() {
         <div class="bill-list">${introducible.map(([k, t]) => `<button class="secondary" data-act="introduce" data-key="${k}"><b>${esc(t.title)}</b><span class="muted small">${esc(t.desc)}</span></button>`).join("")}</div>`) : "";
     const other = G.bills.filter(x => x.arena !== a).map(x => `<li>Bill ${x.num}: ${esc(x.title)} — vote in ${x.voteIn} mo</li>`).join("");
 
-    if (!b) return header + panel("The floor is quiet", `<p class="muted">No bills are pending. That rarely lasts.</p>`) + intro;
+    if (!b) return arenaTabs + header + panel("The floor is quiet", `<p class="muted">No bills are pending. That rarely lasts.</p>`) + intro;
 
     const t = tally(b);
     const d = dir(b);
@@ -237,7 +249,12 @@ function viewChamber() {
     }).join("");
     const w = v => `${(v / (t.for + t.against + t.und) * 100).toFixed(2)}%`;
 
-    return `${header}<div class="tabs">${tabs}</div>
+    const chairKey = b.committeeKey;
+    const stuckChair = b.stuck && npc(b.stuck);
+    const committeeBox = chairKey ? `<p class="small">Committee: <b>${COMMITTEES[chairKey].name}</b>${G.committeeChairs[chairKey] === "player" ? " — you chair it." : ""}</p>
+        ${stuckChair ? `<p class="c-against small">⛔ Bottled up in committee by ${esc(stuckChair.name)}. It won't reach the floor until released.</p><button class="tactic" data-act="lobbychair" ${G.ap < 3 ? "disabled" : ""}>Lobby the chair <em>3 capital</em></button>` : ""}
+        ${G.committeeChairs[chairKey] === "player" ? `<button class="tactic" data-act="fasttrack" ${G.ap < 3 ? "disabled" : ""}>⏩ Fast-track to the floor <em>3 capital</em></button><button class="tactic" data-act="bury" ${G.ap < 4 ? "disabled" : ""}>🪦 Bury it in committee <em>4 capital</em><span>Kill it. Its supporters will remember.</span></button>` : ""}` : "";
+    return `${arenaTabs}${header}<div class="tabs">${tabs}</div>
         <div class="cols">
             <div class="col-main">
                 ${panel(`BILL ${b.num}: ${esc(b.title)}`, `
@@ -259,6 +276,7 @@ function viewChamber() {
                         <button class="${vote === "against" ? "on against" : ""}" data-act="vote" data-v="against">Against</button>
                     </div>
                     <p class="muted small">${pv ? "Your vote counts on the floor." : "You don't vote here, but your whip operation does."} Your constituencies and factions will judge the position you take.</p>`)}
+                ${committeeBox ? panel("Committee", committeeBox) : ""}
                 ${panel("Floor tactics", `
                     <button class="tactic" data-act="speech" ${!d || G.ap < 4 ? "disabled" : ""}>🎙️ Give a speech <em>4 capital</em><span>Sway undecided blocs.</span></button>
                     <button class="tactic" data-act="amend" ${b.amended || G.ap < 5 ? "disabled" : ""}>✏️ Introduce an amendment <em>5 capital</em><span>Soften opposition — and the bill's effects.</span></button>
@@ -417,7 +435,7 @@ function rolePowers() {
     const btn = (act, label, cost, extra = "", note = "") => `<button class="tactic" data-act="${act}" ${extra} ${G.ap < cost ? "disabled" : ""}>${label} <em>${cost} capital</em>${note ? `<span>${note}</span>` : ""}</button>`;
     const groupSel = `<select id="groupSel">${groupEntries().map(([g]) => `<option value="${g}">${GROUPS[g].icon} ${GROUPS[g].name}</option>`).join("")}</select>`;
     let out = "";
-    if (k === "senator") out = `<p class="small muted">Senators don't run the planet — but they can bring money home.</p><select id="fundSel">${Object.keys(PLANET_STATS).map(s => `<option value="${s}">${PLANET_STATS[s].icon} ${PLANET_STATS[s].name}</option>`).join("")}</select>` + btn("fund", "💰 Secure Republic funding", 5, "", "8 influence · a three-year grant");
+    if (k === "senator") out = `<p class="small muted">Senators don't run the planet — use your Senate Desk to bring money home.</p>`;
     if (k === "clan") out = G.clans.map(c => `<div class="statrow"><span>Clan ${esc(c.name)}</span><b>${Math.round(c.loyalty)}</b></div>${bar(c.loyalty)}`).join("") + `<select id="clanSel">${G.clans.map(c => `<option>${esc(c.name)}</option>`).join("")}</select>` + btn("role", "⚔️ Court a clan", 3, 'data-type="clan"') + btn("role", "🔥 Hold a conclave", 3, 'data-type="conclave"');
     if (k === "movement") out = statRow("Independence support", `${Math.round(G.indep)}%`, G.indep) + btn("role", "📣 Mass rally", 3, 'data-type="rally"') + btn("role", "🏗️ Build shadow institutions", 3, 'data-type="shadow"') + btn("role", "🤝 Negotiate autonomy", 3, 'data-type="autonomy"');
     if (k === "opposition" || k === "candidate") out = groupSel + btn("role", "🎯 Campaign stop", 3, 'data-type="stop" data-group="1"') + btn("role", "⚔️ Attack the government", 3, 'data-type="attack" data-group="1"');
@@ -455,6 +473,7 @@ function viewPublic() {
         ${panel("Constituencies", `<p class="muted small">“The people” is not one number. Each group judges you on the conditions they care about — and on what you do.</p><div class="table-wrap"><table><tr><th>Group</th><th>Share</th><th>Approval</th><th></th></tr>${rows}</table></div>`)}
         ${panel("📰 The competing narratives", news)}
     </div><div class="col-side">
+        ${opinionPanel()}
         ${panel("Public mood", `${statRow("Overall approval", `${Math.round(approval())}%`, approval(), "good")}${statRow("Public trust", Math.round(G.trust), G.trust)}${statRow("Unrest", Math.round(G.unrest), G.unrest, "bad")}${statRow("Ideological consistency", Math.round(G.consistency), G.consistency)}${statRow("Scandal heat", Math.round(G.heat), G.heat, "bad")}`)}
         ${panel("Media", `<button class="tactic" data-act="press" ${G.ap < 3 ? "disabled" : ""}>🎤 Hold a press conference <em>3 capital</em></button>${outlets}`)}
     </div></div>`;
@@ -504,105 +523,7 @@ function viewCampaign() {
 
 // ── Galaxy ────────────────────────────────────────────────────────
 
-function galaxyPositions() {
-    const all = { ...WORLDS, ...BACKGROUND_WORLDS };
-    const pos = {};
-    const rings = { core: [0, 95, 0.2], mid: [1, 185, 0.9], outer: [2, 280, 0.35], specialized: [3, 235, 2.4] };
-    const byRegion = {};
-    Object.entries(all).forEach(([k, w]) => { (byRegion[w.region] = byRegion[w.region] || []).push(k); });
-    Object.entries(byRegion).forEach(([r, keys]) => {
-        const [, rad, off] = rings[r];
-        keys.forEach((k, i) => {
-            const span = r === "specialized" ? Math.PI * 0.9 : Math.PI * 2;
-            const a = off + i * span / keys.length;
-            pos[k] = { x: 420 + rad * 1.35 * Math.cos(a), y: 320 + rad * Math.sin(a) };
-        });
-    });
-    return pos;
-}
-
-function viewGalaxy() {
-    const pos = galaxyPositions();
-    const sel = ui.worldSel || G.worldKey;
-    const nodes = Object.entries(pos).map(([k, p]) => {
-        const s = G.galaxy[k];
-        const col = s.independent ? "#b58cff" : s.stability >= 60 ? "var(--for)" : s.stability >= 35 ? "var(--und)" : "var(--against)";
-        const mine = k === G.worldKey;
-        const playable = !!WORLDS[k];
-        return `<g class="gw ${k === sel ? "sel" : ""}" data-act="world" data-key="${k}">
-            ${mine ? `<circle cx="${p.x}" cy="${p.y}" r="17" fill="none" stroke="var(--accent)" stroke-width="2"><animate attributeName="r" values="14;19;14" dur="3s" repeatCount="indefinite"/></circle>` : ""}
-            <circle cx="${p.x}" cy="${p.y}" r="${playable ? 9 : 6}" fill="${col}" ${s.independent ? 'stroke="#fff" stroke-dasharray="2 2"' : ""}/>
-            <text x="${p.x}" y="${p.y + 22}" text-anchor="middle" class="gl ${playable ? "" : "dim"}">${worldName(k)}</text>
-        </g>`;
-    }).join("");
-    const rings = `<ellipse cx="420" cy="320" rx="130" ry="95" class="ring"/><ellipse cx="420" cy="320" rx="250" ry="185" class="ring"/><ellipse cx="420" cy="320" rx="378" ry="280" class="ring"/>
-        <text x="296" y="324" text-anchor="middle" class="rl">CORE</text><text x="176" y="324" text-anchor="middle" class="rl" transform="rotate(-90 176 324)">MID RIM</text><text x="48" y="324" text-anchor="middle" class="rl" transform="rotate(-90 48 324)">OUTER RIM</text>`;
-    const s = G.galaxy[sel];
-    const w = WORLDS[sel] || BACKGROUND_WORLDS[sel];
-    const sen = sel === G.worldKey && s.senatorId === "player" ? null : worldSenator(sel);
-    const info = panel(`${worldName(sel)}${sel === G.worldKey ? " (home)" : ""}`, `
-        ${w.tagline ? `<p class="muted small">${esc(w.tagline)}</p>` : ""}
-        ${w.const ? `<p class="small">${esc(sel === G.worldKey ? G.const.gov : w.const.gov)}</p>` : ""}
-        ${s.independent ? `<p class="c-und">Independent — no longer in the Republic.</p>` : ""}
-        ${statRow("Stability", Math.round(s.stability), s.stability)}
-        ${statRow("Prosperity", Math.round(s.prosperity), s.prosperity)}
-        ${statRow("Independence support", `${Math.round(s.indep)}%`, s.indep, "bad")}
-        ${sen ? `<p>Senator <b>${esc(sen.name)}</b> · ${FACTIONS[sen.faction].name} ${relBadge(sen.rel)}</p>` : s.senatorId === "player" ? "<p>You represent this world.</p>" : ""}
-        ${sel !== G.worldKey && !s.independent ? `<button class="tactic" data-act="visit" data-key="${sel}" ${G.ap < 3 ? "disabled" : ""}>🚀 State visit <em>3 capital</em><span>Improves relations with its senator.</span></button>` : ""}`);
-    const galStats = Object.entries(GAL_STATS).map(([k, d]) => statRow(`${d.icon} ${d.name}`, Math.round(G.gal[k]), G.gal[k], d.bad ? "bad" : "good")).join("");
-    const ch = chancellor();
-    const facs = Object.entries(FACTIONS).map(([k, f]) => `<div class="statrow"><span>${f.icon} ${f.name}${k === G.ideology ? " (yours)" : ""}</span><b class="${G.factions[k] >= 0 ? "c-for" : "c-against"}">${fmt(G.factions[k])}</b></div>`).join("");
-    return `<div class="cols"><div class="col-main">${panel("", `<svg class="galaxy" viewBox="0 0 840 640">${rings}${nodes}</svg>`, "webpanel")}</div>
-        <div class="col-side">${info}
-        ${panel("Supreme Chancellor", G.chancellorId === "player" ? "<p><b>You.</b></p>" : ch ? `<p><b>${esc(ch.name)}</b> of ${worldName(ch.world)} · ${FACTIONS[ch.faction].name} ${relBadge(ch.rel)}</p><p class="muted small">Next Chancellor election in ${G.chancTermLeft} months.</p>` : "<p>Vacant.</p>")}
-        ${panel("The galaxy", galStats)}
-        ${panel("Your standing with the factions", facs)}</div></div>`;
-}
-
-
 // ── Network ───────────────────────────────────────────────────────
-
-function npcCard(n) {
-    const open = ui.npcOpen === n.id;
-    return `<div class="npc ${n.rel >= 35 ? "ally" : n.rel <= -30 ? "rival" : ""}">
-        <div class="npc-head" data-act="npc" data-id="${n.id}">
-            <div><b>${esc(n.name)}</b><br><span class="muted small">${esc(n.title)} · ${FACTIONS[n.faction].icon} ${FACTIONS[n.faction].name} · influence ${Math.round(n.influence)}</span></div>
-            ${relBadge(n.rel)}
-        </div>
-        ${open ? `<div class="npc-body">
-            <h4>They remember</h4>${n.memory.length ? `<ul class="small">${n.memory.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : '<p class="muted small">Nothing in particular — yet.</p>'}
-            <div class="row">
-                <button class="mini" data-act="meet" data-id="${n.id}" ${G.ap < 3 ? "disabled" : ""}>Private meeting · 3</button>
-                <button class="mini" data-act="endorse" data-id="${n.id}" ${n.rel < 50 || n.endorsedTerm === G.termIndex || G.ap < 3 ? "disabled" : ""}>Ask for endorsement · 3</button>
-                <button class="mini" data-act="leakrival" data-id="${n.id}" ${G.ap < 3 ? "disabled" : ""}>Leak dirt · 3</button>
-                <button class="mini danger" data-act="denounce" data-id="${n.id}" ${G.ap < 3 ? "disabled" : ""}>Denounce · 3</button>
-            </div></div>` : ""}
-    </div>`;
-}
-
-function viewNetwork() {
-    const people = livingNpcs().filter(n => n.arena !== "retired");
-    const al = people.filter(n => n.rel >= 35).sort((a, b) => b.rel - a.rel);
-    const rv = people.filter(n => n.rel <= -30).sort((a, b) => a.rel - b.rel);
-    const home = people.filter(n => n.world === G.worldKey && n.rel > -30 && n.rel < 35);
-    const others = people.filter(n => n.world !== G.worldKey && n.rel > -30 && n.rel < 35).sort((a, b) => b.influence - a.influence);
-    const f = G.family;
-    const fam = `${f.spouse ? `<p>Spouse: <b>${esc(f.spouse.name)}</b>${f.spouse.alive ? "" : " (deceased)"}</p>` : "<p>Unmarried.</p>"}
-        ${f.children.length ? `<ul class="small">${f.children.map(c => `<li>${esc(c.name)}, ${c.age}${c.inPolitics ? " — in politics" : ""}</li>`).join("")}</ul>` : '<p class="muted small">No children.</p>'}`;
-    const secrets = G.secrets.length ? `<ul class="small">${G.secrets.map(s => `<li class="${s.exposed ? "c-against" : ""}">${esc(s.text)}${s.exposed ? " — EXPOSED" : ""}</li>`).join("")}</ul>` : '<p class="muted small">None. Yet.</p>';
-    return `<div class="cols"><div class="col-main">
-        ${panel(`Allies (${al.length})`, al.map(npcCard).join("") || '<p class="muted">None.</p>')}
-        ${panel(`Rivals (${rv.length})`, rv.map(npcCard).join("") || '<p class="muted">None.</p>')}
-        ${panel(`${world().name}`, home.map(npcCard).join("") || '<p class="muted">—</p>')}
-        ${panel("The wider Senate", others.map(npcCard).join(""))}
-    </div><div class="col-side">
-        ${panel(esc(G.name), `${statRow("Age", G.age)}${statRow("Health", Math.round(G.health), G.health, "good")}${statRow("Reputation", Math.round(G.rep), G.rep)}${statRow("Philosophy", `${FACTIONS[G.ideology].icon} ${FACTIONS[G.ideology].name}`)}<p class="muted small">“${FACTIONS[G.ideology].motto}”</p>${statRow("Chief of staff", esc(G.chiefOfStaff))}`)}
-        ${panel("Family", fam)}
-        ${panel("🤫 Secrets", secrets)}
-        ${panel("", `<button class="secondary" data-act="retire">🕯️ Retire and pass the torch</button>`)}
-    </div></div>`;
-}
-
 
 // ── Charter ───────────────────────────────────────────────────────
 
@@ -656,20 +577,6 @@ function viewCharter() {
 
 // ── Archive ───────────────────────────────────────────────────────
 
-function viewArchive() {
-    const types = ["all", "career", "legislation", "legacy", "betrayal", "scandal", "world", "year", "event"];
-    const logs = G.chronicle.filter(e => ui.logFilter === "all" || e.type === ui.logFilter).slice(0, 150).map(e => `<p><span class="muted small">${e.date}</span> ${esc(e.text)}</p>`).join("");
-    const dyn = G.dynasty.map(d => `<li><b>${esc(d.name)}</b> <span class="muted">Gen ${d.generation} · Year ${d.from}–${d.end ?? "present"}</span><br><span class="small">${d.offices.map(esc).join(" → ")}</span>${d.reason ? `<br><span class="muted small">${esc(d.reason)}</span>` : ""}${d.legacy && d.legacy.length ? `<br><span class="small c-for">Legacy: ${d.legacy.map(esc).join("; ")}</span>` : ""}</li>`).join("");
-    const progs = G.programs.map(p => `<li><b>${esc(p.name)}</b> — ${p.left} of ${p.years} years left <span class="muted">(founded by ${esc(p.founder)}, Year ${p.started})</span></li>`).join("");
-    return `<div class="cols"><div class="col-main">
-        ${panel("Chronicle", `<div class="tabs">${types.map(t => `<button class="tab ${ui.logFilter === t ? "active" : ""}" data-act="logf" data-t="${t}">${t}</button>`).join("")}</div><div class="log">${logs || '<p class="muted">Nothing here.</p>'}</div>`)}
-    </div><div class="col-side">
-        ${panel("The dynasty", `<ol class="dynasty-list">${dyn}</ol>`)}
-        ${panel("Living legacy", progs ? `<ul class="small">${progs}</ul>` : '<p class="muted small">No long-term programmes running.</p>')}
-    </div></div>`;
-}
-
-
 // ── Scenes & toasts ───────────────────────────────────────────────
 
 function renderScene() {
@@ -700,48 +607,3 @@ function toast(title, text, changes = [], key = null) {
 }
 
 
-// ── Setup screens ─────────────────────────────────────────────────
-
-function renderWorldPicker() {
-    $("#worldList").innerHTML = REGIONS.map(r => `
-        <div class="region"><h3>${r.name}</h3><div class="grid3">
-        ${Object.entries(WORLDS).filter(([, w]) => w.region === r.key).map(([k, w]) => `
-            <button class="world-card" data-act="pickworld" data-key="${k}">
-                <b>${w.name}</b><span class="diff">${"◆".repeat(w.difficulty)}${"◇".repeat(5 - w.difficulty)}</span>
-                <span class="small">${esc(w.tagline)}</span>
-                <span class="muted small">${esc(w.const.gov)} · ${w.roles.length} role${w.roles.length > 1 ? "s" : ""}</span>
-            </button>`).join("")}
-        </div></div>`).join("");
-}
-
-function renderWorldSetup(key) {
-    ui.setupWorld = key;
-    const w = WORLDS[key];
-    const c = w.const;
-    const lim = n => n > 0 ? `${n} term${n > 1 ? "s" : ""}` : "No limit";
-    $("#setupTitle").textContent = w.name.toUpperCase();
-    $("#setupTagline").textContent = w.tagline;
-    $("#constitutionCard").innerHTML = `
-        <h3>Constitution</h3>
-        <table class="rules">
-            <tr><td class="muted">Government</td><td>${esc(c.gov)}</td></tr>
-            <tr><td class="muted">Legislature</td><td>${esc(c.legislature)}</td></tr>
-            <tr><td class="muted">Executive</td><td>${esc(c.executive)}</td></tr>
-            <tr><td class="muted">Senate term</td><td>${c.senateTerm} years · ${lim(c.senateLimit)}</td></tr>
-            <tr><td class="muted">Executive term</td><td>${c.execTerm} years · ${lim(c.execLimit)}</td></tr>
-            <tr><td class="muted">Constitutional amendment</td><td>${esc(c.amendment)}</td></tr>
-            <tr><td class="muted">Election system</td><td>${esc(c.elections)}</td></tr>
-            <tr><td class="muted">Judicial independence</td><td>${c.judicial >= 70 ? "High" : c.judicial >= 40 ? "Moderate" : "Low"}</td></tr>
-            <tr><td class="muted">Military control</td><td>${esc(c.militaryControl)}</td></tr>
-            <tr><td class="muted">Political stability</td><td>${c.stability >= 70 ? "High" : c.stability >= 45 ? "Moderate" : "Low"}</td></tr>
-        </table>
-        <p class="quote">“You will inherit these institutions. Their rules can be changed — but changing them will require political power.”</p>
-        <p class="small">${esc(w.intro)}</p>
-        <h4>Who holds power here</h4><div class="hints">${w.powers.map(p => `<span class="hint">${esc(p)}</span>`).join("")}</div>`;
-    $("#roleList").innerHTML = w.roles.map((r, i) => `
-        <button class="role-card" data-act="pickrole" data-i="${i}">
-            <b>${esc(r.title)}</b><span class="muted small">${KIND_INFO[r.kind].label}</span><span class="small">${esc(r.desc)}</span>
-        </button>`).join("");
-    if (!$("#playerName").value) $("#playerName").value = randomName(key);
-    showScreen("setup");
-}

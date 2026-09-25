@@ -28,10 +28,14 @@ function endMonth() {
     G.month++;
     if (G.month > 12) { G.month = 1; G.year++; tickYear(); }
 
+    tickHistory();
     tickEconomy();
     tickPublic();
     tickGalaxy();
+    tickOpinion();
+    tickWar();
     tickLegislature();
+    tickAppropriations();
     tickPromises();
     tickOffice();
     tickPersonal();
@@ -122,6 +126,8 @@ function tickGalaxy() {
 
 function tickLegislature() {
     G.bills.slice().forEach(b => {
+        if (b.stuck) { if (chance(20)) b.stuck = null; else return; }
+        if (G.agenda === b.id) b.momentum += 4;
         b.voteIn--;
         // Delegations drift over time.
         arenaNpcs(b.arena).forEach(n => {
@@ -129,10 +135,10 @@ function tickLegislature() {
             if (b.npcPos[n.id] === "undecided" && chance(15)) b.npcPos[n.id] = chance(50 + b.momentum) ? "for" : "against";
         });
         if (b.voteIn <= 0) {
-            const vetoable = b.arena === "local" && canDecree() && b.playerVote === "against";
+            const vetoable = b.arena === "local" && (canDecree() || isConstitutionalMonarch()) && b.playerVote === "against";
             const res = resolveBillMaybeHold(b, vetoable);
             // Only stop the clock for votes you have a stake in.
-            const stake = b.sponsor === "player" || (b.arena === arena() && b.playerVote && b.playerVote !== "abstain") || res.betrayals.length || res.vetoable
+            const stake = b.sponsor === "player" || b.petition || (b.keyVote && roleCat() === "senate") || (b.arena === arena() && b.playerVote && b.playerVote !== "abstain") || res.betrayals.length || res.vetoable
                 || G.obligations.some(o => o.billKey === b.key) || G.promises.some(p => p.billKey === b.key);
             if (stake) pushScene("vote", res);
             else report(`${b.title}`, `${res.passed ? "Passed" : "Failed"} ${res.t.for}–${res.t.against} in the ${arenaName(b.arena)}.`, res.changes);
@@ -203,7 +209,7 @@ function tickOffice() {
     }
 
     // Supreme Chancellor cycle (when someone else holds it).
-    if (k !== "chancellor") {
+    if (k !== "chancellor" && !G.chancLocked && ["republic", "crisis", "newrepublic"].includes(G.era) && G.hist.no_confidence) {
         G.chancTermLeft--;
         if (G.chancTermLeft <= 0) {
             G.chancTermLeft = 48;
@@ -258,7 +264,7 @@ function tickYear() {
 
     livingNpcs().forEach(n => {
         n.influence = clamp(n.influence + ri(-5, 6));
-        if (chance(2) && n.id !== G.chancellorId) {
+        if (!n.canon && chance(2) && n.id !== G.chancellorId) {
             n.alive = false;
             log(`${n.name} (${n.title}) has died.`, "world");
             if (n.arena === "senate" && G.galaxy[n.world] && G.galaxy[n.world].senatorId === n.id && !G.galaxy[n.world].independent) {
@@ -307,8 +313,10 @@ function rollEvents() {
         if (!ev.weight) return;
         if (G.lastEvents[id] && monthsNow() - G.lastEvents[id] < (ev.cooldown || 14)) return;
         if (G.inbox.some(d => d.id === id)) return;
+        const w = typeof ev.weight === "function" ? ev.weight(G) : ev.weight;
+        if (!w) return;
         const ctx = ev.setup ? ev.setup(G) : {};
-        if (ctx) eligible.push({ id, ctx, w: typeof ev.weight === "function" ? ev.weight(G) : ev.weight });
+        if (ctx) eligible.push({ id, ctx, w });
     });
     if (!eligible.length) return;
     const total = eligible.reduce((s, e) => s + e.w, 0);
@@ -712,6 +720,10 @@ function beginSuccessor(s, roleIndex) {
     if (G.family.spouse && chance(30)) G.family.spouse = null;
     G.chiefOfStaff = randomName(G.worldKey);
     G.officesHeld = [];
+    const heirApp = s.relation === "Your child" ? { ...G.app, hair: pick(["short", "long", "bun", "braids"]), age: "young", accessory: "none" } : randomAppearance(pick(world().species));
+    if (s.relation === "Your child" && SPECIES[heirApp.species].skins.length > 1 && chance(40)) heirApp.skin = pick(SPECIES[heirApp.species].skins);
+    G.app = heirApp;
+    G.committees = []; G.chairOf = null; G.seniority = 0; G.signed2000 = false; G.secretRebel = false; G.isb = 0; G.homeDelivered = 0;
     livingNpcs().forEach(n => {
         const old = n.rel;
         n.rel = Math.round(n.rel * 0.5);

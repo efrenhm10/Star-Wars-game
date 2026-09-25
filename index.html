@@ -15,9 +15,9 @@
 <!-- Boot -->
 <section id="boot" class="screen active">
     <div class="boot">
-        <div class="boot-kicker">A POLITICAL SIMULATION</div>
+        <div class="boot-kicker">32 BBY · A POLITICAL HISTORY OF THE GALAXY</div>
         <h1>GALACTIC SENATE</h1>
-        <p class="boot-lede">Not a war game. A game about institutions, coalitions, voters, the press, constitutions — and the people you betrayed on the way up.</p>
+        <p class="boot-lede">You are not the protagonist of Star Wars. You are a protagonist in the Star Wars galaxy. The Republic still stands. Trade disputes simmer. Your world has its own problems. And then history starts happening to it.</p>
         <div class="boot-actions">
             <button id="newBtn" class="primary big">Begin a political career</button>
             <button id="continueBtn" class="secondary big">Continue saved career</button>
@@ -27,6 +27,7 @@
             <div><b>🏛️ Legislate</b><span>Whip delegations, trade votes, amend, leak, stall. Every promise is remembered.</span></div>
             <div><b>🗳️ Campaign</b><span>Win districts, raise money, and owe the people who gave it.</span></div>
             <div><b>⚖️ Rewrite the rules</b><span>Term limits, courts, clan rule, independence — if you can make it legitimate.</span></div>
+            <div><b>📜 Live through history</b><span>The blockade of Naboo, Palpatine's rise, the Clone Wars, the Empire — with Padmé, Bail, Mon Mothma and Palpatine as people who remember you.</span></div>
         </div>
     </div>
 </section>
@@ -35,7 +36,7 @@
 <section id="worlds" class="screen">
     <div class="setup-head">
         <div>
-            <div class="boot-kicker">STEP 1 OF 2</div>
+            <div class="boot-kicker">STEP 1 OF 3</div>
             <h1>Choose your constituency</h1>
             <p class="muted">You're not choosing a map. You're choosing the political system you'll have to survive.</p>
         </div>
@@ -48,7 +49,7 @@
 <section id="setup" class="screen">
     <div class="setup-head">
         <div>
-            <div class="boot-kicker">STEP 2 OF 2</div>
+            <div class="boot-kicker">STEP 2 OF 3 — THE WORLD YOU INHERIT</div>
             <h1 id="setupTitle"></h1>
             <p id="setupTagline" class="muted"></p>
         </div>
@@ -58,19 +59,35 @@
         <div class="col-main"><section class="panel" id="constitutionCard"></section></div>
         <div class="col-side">
             <section class="panel">
-                <h3>Your politician</h3>
-                <label class="muted small" for="playerName">Name</label>
-                <input type="text" id="playerName" maxlength="40">
-                <label class="muted small" for="playerIdeology">Political philosophy</label>
-                <select id="playerIdeology"></select>
-                <p id="ideologyMotto" class="quote"></p>
-            </section>
-            <section class="panel">
                 <h3>Choose your role</h3>
                 <p class="muted small">Same planet, different game.</p>
                 <div id="roleList"></div>
             </section>
         </div>
+    </div>
+</section>
+
+<!-- Character creator -->
+<section id="creator" class="screen">
+    <div class="setup-head">
+        <div>
+            <div class="boot-kicker">STEP 3 OF 3 — WHO YOU ARE</div>
+            <h1 id="creatorTitle"></h1>
+            <p class="muted">Choose from the peoples who actually live on your world, and make them look like you.</p>
+        </div>
+        <button id="backToRoles" class="secondary">← Roles</button>
+    </div>
+    <div class="creator">
+        <div class="panel creator-left">
+            <div id="creatorPortrait" class="creator-portrait"></div>
+            <label class="muted small" for="playerName">Name</label>
+            <div class="row nowrap"><input type="text" id="playerName" maxlength="40"><button class="secondary small-btn" data-act="rename" title="Random name">🎲</button></div>
+            <label class="muted small" for="playerIdeology">Political philosophy</label>
+            <select id="playerIdeology"></select>
+            <p id="ideologyMotto" class="quote"></p>
+            <button class="primary big" data-act="begin">Begin in 32 BBY →</button>
+        </div>
+        <div class="panel" id="creatorControls"></div>
     </div>
 </section>
 
@@ -86,14 +103,21 @@
 <div id="toasts"></div>
 
 <script src="js/data.js"></script>
+<script src="js/worlds.js"></script>
+<script src="js/species.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/canon.js"></script>
 <script src="js/policy.js"></script>
 <script src="js/legislature.js"></script>
 <script src="js/politics.js"></script>
 <script src="js/events.js"></script>
 <script src="js/scenes.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/canon_events.js"></script>
 <script src="js/actions.js"></script>
+<script src="js/powers.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/ui_world.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

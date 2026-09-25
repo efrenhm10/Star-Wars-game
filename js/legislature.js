@@ -90,7 +90,7 @@ const LEAN_WORDS = { 3: "champions", 2: "supports", 1: "leans for", 0: "undecide
 // ── Seats ──────────────────────────────────────────────────────────
 
 function arenaName(a = arena()) {
-    if (a === "senate") return "Galactic Senate";
+    if (a === "senate") return G.allegiance === "separatist" ? "Separatist Parliament" : ["empire", "rebellion"].includes(G.era) ? "Imperial Senate" : G.era === "newrepublic" ? "New Republic Senate" : "Galactic Senate";
     const w = world();
     return w.const ? (G.const.legislature || "Planetary Legislature") : "Planetary Legislature";
 }
@@ -179,7 +179,10 @@ function createBill(key, sponsor = null, custom = null) {
     const ch = chancellor();
     if (b.arena === "senate" && ch) b.momentum += (b.stance[ch.faction] || 0) * 2;
     if (sponsor === "player") b.momentum += 4;
+    if (b.arena === "senate" && G.era === "empire") b.momentum += ((b.stance.militarists || 0) + (b.stance.centralists || 0)) * 3;
+    if (sponsor === "player" && G.committees && G.committees.includes(committeeFor(b))) b.momentum += 4;
     arenaNpcs(b.arena).forEach(n => { b.npcPos[n.id] = npcInitialPosition(n, b); });
+    gateBill(b);
     G.bills.push(b);
     G.usedBills[key] = monthsNow();
     return b;
@@ -323,6 +326,7 @@ function introduceBill(key) {
     if (!spendAP(6)) return;
     applyEffects({ influence: -6 });
     const b = createBill(key, "player");
+    G.record.billsIntroduced++;
     report("Bill introduced", `You introduce the ${b.title} (Bill ${b.num}). The vote is in three months.`);
     render();
 }
@@ -380,6 +384,10 @@ function resolveBill(b) {
     // What the law actually does to the world.
     if (passed) changes.push(...enactBill(b));
 
+    if (b.sponsor === "player" && passed) G.record.billsPassed++;
+    if (b.keyVote && involved) recordVote(b.title, vote);
+    arenaNpcs(b.arena).filter(n => n.canon && Math.abs(b.stance[n.faction] || 0) >= 2).forEach(n => remember(n, `You voted ${vote.toUpperCase()} on the ${b.title}.`));
+    if (b.petition) resolvePetition(b, passed);
     if (b.sponsor === "player") {
         changes.push(...applyEffects(passed ? { influence: 7, rep: 2 } : { influence: -4 }));
         log(`${passed ? "✅ Your bill passed" : "❌ Your bill failed"}: ${b.title} (${t.for}–${t.against}).`, "legislation");

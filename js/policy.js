@@ -12,7 +12,8 @@ const POLICY_CATS = {
     services: { name: "Public Services", color: "#63c7a8" },
     law:      { name: "Law & Order",     color: "#9b87e8" },
     env:      { name: "Environment",     color: "#7cc25d" },
-    society:  { name: "Society",         color: "#e88f58" }
+    society:  { name: "Society",         color: "#e88f58" },
+    emergency:{ name: "Wartime & Emergency", color: "#e8596a" }
 };
 
 // cost: billions of credits per month at full level (negative = revenue).
@@ -43,8 +44,16 @@ const POLICIES = {
     protected:      { name: "Protected Lands",       icon: "🌲", cat: "env",      cost: 0.4,  fx: { environment: 10, employment: -2 }, g: { traditional: 8, environmentalists: 6, business: -3 }, f: { traditionalists: 2 } },
     migration:      { name: "Open Migration",        icon: "🧳", cat: "society",  cost: 0,    fx: { employment: 3, housing: -3 }, g: { urban: 2, religious: 2, traditional: -4 }, f: { reformers: 1, traditionalists: -2 } },
     heritage:       { name: "Heritage & Faith Funding", icon: "🏛️", cat: "society", cost: 0.5, fx: {}, g: { religious: 7, traditional: 6, elders: 3, youth: -1 }, f: { traditionalists: 3 } },
-    arts:           { name: "Arts & Culture",        icon: "🎭", cat: "society",  cost: 0.4,  fx: { education: 2 }, g: { youth: 3, students: 3, urban: 2 }, f: { reformers: 1 } }
+    arts:           { name: "Arts & Culture",        icon: "🎭", cat: "society",  cost: 0.4,  fx: { education: 2 }, g: { youth: 3, students: 3, urban: 2 }, f: { reformers: 1 } },
+    // Wartime and emergency measures: only available in war, under attack, or in a declared emergency.
+    conscription:   { name: "Military Conscription", icon: "🪖", cat: "emergency", war: true, cost: 0.8, fx: { employment: 2, education: -3 }, g: { youth: -9, students: -6, military: 5, elders: 2 }, f: { militarists: 3, reformers: -3 } },
+    censorship:     { name: "Wartime Censorship",    icon: "🤐", cat: "emergency", war: true, cost: 0.2, fx: {}, g: { students: -6, youth: -4, elders: 2 }, f: { militarists: 2, reformers: -4 } },
+    emergency_tax:  { name: "Emergency War Tax",     icon: "💸", cat: "emergency", war: true, cost: -2.5, fx: { employment: -2 }, g: { business: -5, elites: -6, workers: -2 }, f: { corporatists: -3 } },
+    martial_law:    { name: "Martial Law",           icon: "⚔️", cat: "emergency", war: true, cost: 1.0, fx: { crime: -10, employment: -2 }, g: { youth: -8, students: -6, elders: 3, business: -2 }, f: { militarists: 3, reformers: -6, federalists: -2 } },
+    nationalize:    { name: "Nationalised War Industry", icon: "🏭", cat: "emergency", war: true, cost: -0.5, fx: { employment: 5, inequality: -2 }, g: { workers: 4, business: -8, elites: -5 }, f: { reformers: 2, corporatists: -6 } }
 };
+
+const wartime = () => G.war || G.siege || G.occupied || (G.emergencyDeclared || 0) > 0;
 
 // Situations: they turn on when values cross thresholds, and push back.
 const SITUATIONS = [
@@ -209,9 +218,12 @@ function tickPolicies() {
 }
 
 function npcGovernmentMove() {
-    const k = pick(Object.keys(POLICIES));
+    const pm = G.pm && npc(G.pm);
+    const keys = Object.keys(POLICIES).filter(k => !POLICIES[k].war || wartime());
+    const liked = pm ? keys.filter(k => (POLICIES[k].f[pm.faction] || 0) > 0) : [];
+    const k = liked.length && chance(70) ? pick(liked) : pick(keys);
     const p = G.policies[k];
-    const d = pick([-0.2, 0.2]);
+    const d = pm ? ((POLICIES[k].f[pm.faction] || 0) >= 0 ? 0.2 : -0.2) : pick([-0.2, 0.2]);
     const nl = clamp(p.level + d, 0, 1);
     if (nl === p.level) return;
     p.level = Math.round(nl * 100) / 100;
@@ -253,6 +265,7 @@ function setPolicy(k, newLevel, galactic = false) {
     const store = galactic ? G.galPolicies : G.policies;
     const p = store[k];
     newLevel = Math.round(clamp(newLevel, 0, 1) * 100) / 100;
+    if (defs[k].war && newLevel > p.level && !wartime()) return toast("Not in peacetime", `${defs[k].name} can only be introduced in wartime, under attack, or during a declared emergency.`);
     const cost = policyChangeCost(k, newLevel, galactic);
     if (!cost) return;
     if (!spendAP(cost)) return;

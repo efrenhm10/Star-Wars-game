@@ -17,9 +17,9 @@ const arena = () => {
     return kindInfo().arena;
 };
 const isElected = () => kindInfo().elected;
-const canDecree = () => !!kindInfo().decree;
+const canDecree = () => !!kindInfo().decree && !(G.office.kind === "monarch" && G.const.monarchy === "constitutional");
 const constitution = () => (G.office.kind === "chancellor" || G.office.kind === "minister") ? G.galConst : G.const;
-const dateStr = (y = G.year, m = G.month) => `Year ${y} · Month ${m}`;
+const dateStr = (y = G.year, m = G.month) => `${eraYear(33 - y)} · Month ${m}`;
 const npc = id => G.npcs.find(n => n.id === id);
 const livingNpcs = () => G.npcs.filter(n => n.alive);
 const chancellor = () => G.chancellorId === "player" ? null : npc(G.chancellorId);
@@ -280,9 +280,15 @@ function leanPick(lean) {
 }
 
 function makeNpc(o) {
+    const w = WORLDS[o.world];
+    const sp = w ? pick(w.species) : pick(["human", "human", "human", "twilek", "zabrak", "rodian"]);
+    const app = randomAppearance(sp);
+    app.age = pick(["prime", "prime", "elder", "young"]);
+    if (sp === "human" || sp === "zabrak") app.hair = pick(["short", "short", "bun", "long", "none", "curly"]);
     return Object.assign({
+        app,
         id: `n${npcCounter++}`,
-        name: randomName(o.world),
+        name: randomName(o.world, sp),
         faction: leanPick((WORLDS[o.world] || {}).lean),
         rel: ri(-15, 15),
         influence: ri(20, 70),
@@ -311,14 +317,14 @@ function worldSenator(key) {
 
 // ── New career ─────────────────────────────────────────────────────
 
-function newCareer({ worldKey, roleIndex, name, ideology }) {
+function newCareer({ worldKey, roleIndex, name, ideology, app }) {
     const w = WORLDS[worldKey];
     const role = w.roles[roleIndex];
     npcCounter = 1;
 
     G = {
         v: 1,
-        worldKey, name, ideology,
+        worldKey, name, ideology, app: app || randomAppearance(WORLDS[worldKey].species[0]),
         year: 1, month: 1,
         age: ri(34, 48),
         health: ri(80, 95),
@@ -341,7 +347,7 @@ function newCareer({ worldKey, roleIndex, name, ideology }) {
         programs: [], secrets: [], dynasty: [], amendments: [], amendment: null,
         family: makeFamily(),
         clans: w.clans ? w.clans.map(c => ({ name: c, loyalty: ri(35, 70) })) : null,
-        chancellorId: null, chancTermLeft: ri(14, 40),
+        chancellorId: null, chancTermLeft: 60,
         autocrat: false, lastEvents: {}, generation: 1,
         chiefOfStaff: randomName(worldKey),
         termIndex: 0, careerStart: 1, officesHeld: []
@@ -365,16 +371,18 @@ function newCareer({ worldKey, roleIndex, name, ideology }) {
     }
 
 
-    buildGalaxy();
-    buildLocalFigures();
+    buildGalaxy(role);
+    initHistory();
+    buildLocalFigures(role);
     seedRelationships();
 
     setOffice(makeOffice(role), { silent: true });
     if (role.startLeft && G.office.termLeft != null) G.office.termLeft = role.startLeft;
+    initCommittees();
 
     G.dynasty.push({ name, generation: 1, from: G.year, offices: [role.title], end: null, legacy: [] });
 
-    log(`${name} begins a political career on ${w.name} as ${role.title}. ${w.intro}`, "career");
+    log(`32 BBY. ${name} begins a political career on ${w.name} as ${role.title}. ${w.intro}`, "career");
     spawnBill(arena() === "none" ? "senate" : arena());
     if (arena() === "local") spawnBill("senate");
     seedInbox();
@@ -388,8 +396,9 @@ function makeFamily() {
     return fam;
 }
 
-function buildGalaxy() {
+function buildGalaxy(role) {
     const all = { ...WORLDS, ...BACKGROUND_WORLDS };
+    const displaced = role && role.canonHolder;
     Object.entries(all).forEach(([key, w]) => {
         const s = {
             stability: w.const ? w.const.stability + ri(-8, 8) : ri(35, 70),
@@ -399,32 +408,55 @@ function buildGalaxy() {
             senatorId: null
         };
         G.galaxy[key] = s;
-        if (key === G.worldKey) return;
+        if (w.canonAlign === "hutt") return;
+        // Canon senators hold their real seats.
+        const canonSeat = canonSeatFor(key);
+        const playerTakesSeat = key === G.worldKey && role && role.kind === "senator";
+        if (canonSeat) {
+            const [ck] = canonSeat;
+            const n = makeCanonNpc(ck, playerTakesSeat ? { displaced: true, arena: "galactic" } : {});
+            G.npcs.push(n);
+            if (!playerTakesSeat) { s.senatorId = n.id; return; }
+            return;
+        }
+        if (playerTakesSeat) return;
         const sen = makeNpc({ world: key, title: `Senator of ${w.name}`, arena: "senate" });
         G.npcs.push(sen);
         s.senatorId = sen.id;
     });
-    // The Supreme Chancellor, drawn from a core world.
-    const core = livingNpcs().filter(n => n.arena === "senate" && ((WORLDS[n.world] || BACKGROUND_WORLDS[n.world]).region === "core"));
-    const ch = pick(core.length ? core : livingNpcs());
-    ch.influence = 85;
-    G.chancellorId = ch.id;
+    // Other canon figures active in 32 BBY: the Chancellor, Vice Chair, Trade Federation, banks, Jedi.
+    Object.entries(CANON).forEach(([k, c]) => {
+        if (c.seat || c.from < 32 || G.npcs.some(n => n.canon === k)) return;
+        if (c.arena === "local") { if (c.world !== G.worldKey) G.npcs.push(makeCanonNpc(k, { arena: "galactic" })); return; }
+        G.npcs.push(makeCanonNpc(k));
+    });
+    const val = canonNpc("valorum");
+    G.chancellorId = val ? val.id : null;
 }
 
-function buildLocalFigures() {
+function buildLocalFigures(role) {
     const w = world();
+    // Canon characters of your own world, in their real offices (or displaced by you).
+    Object.entries(CANON).forEach(([k, c]) => {
+        if (c.world !== G.worldKey || c.arena !== "local" || c.from < 32) return;
+        const displaced = role && role.canonHolder === k;
+        G.npcs.push(makeCanonNpc(k, displaced ? { displaced: true } : {}));
+    });
+    const have = livingNpcs().filter(n => n.arena === "local").length;
     const titles = w.clans
-        ? w.clans.slice(0, 5).map(c => `Head of Clan ${c}`)
+        ? w.clans.map(c => `Head of Clan ${c}`)
         : ["Speaker of the Legislature", "Leader of the Opposition", "Finance Committee Chair", "Labour Caucus Chair", "Security Committee Chair"];
-    titles.forEach(t => G.npcs.push(makeNpc({ world: G.worldKey, title: t, arena: "local", votes: ri(3, 6) })));
-    // The world's senator (if the player isn't going to be it).
-    const sen = makeNpc({ world: G.worldKey, title: `Senator of ${w.name}`, arena: "senate" });
-    G.npcs.push(sen);
-    G.galaxy[G.worldKey].senatorId = sen.id;
+    titles.slice(0, Math.max(2, 6 - have)).forEach(t => G.npcs.push(makeNpc({ world: G.worldKey, title: t, arena: "local", votes: ri(3, 6) })));
+    // The world's senator (if the player isn't it and no canon senator exists).
+    if (!G.galaxy[G.worldKey].senatorId && !(role && role.kind === "senator") && w.canonAlign !== "hutt") {
+        const sen = makeNpc({ world: G.worldKey, title: `Senator of ${w.name}`, arena: "senate" });
+        G.npcs.push(sen);
+        G.galaxy[G.worldKey].senatorId = sen.id;
+    }
 }
 
 function seedRelationships() {
-    const pool = shuffle(livingNpcs().filter(n => n.id !== G.chancellorId));
+    const pool = shuffle(livingNpcs().filter(n => n.id !== G.chancellorId && !n.canon && ["senate", "local"].includes(n.arena)));
     pool.slice(0, 4).forEach(n => { n.rel = ri(40, 60); remember(n, pick(["Supported your first campaign.", "An old friend from your early days in politics.", "Owes you for a committee vote years ago.", "Shares your philosophy and your enemies."])); });
     pool.slice(4, 7).forEach(n => { n.rel = ri(-60, -38); remember(n, pick(["You defeated their protégé in an election.", "You publicly mocked their bill.", "Blames you for a scandal that ended a friend's career.", "Sees you as a threat to their ambitions."])); });
 }
@@ -458,9 +490,9 @@ function setOffice(o, { silent = false } = {}) {
     const holdsSeat = o.kind === "senator";
     if (holdsSeat && home.senatorId !== "player") {
         const old = npc(home.senatorId);
-        if (old) { old.arena = "retired"; old.title = `Former Senator of ${world().name}`; }
+        if (old) { old.arena = old.canon ? "galactic" : "retired"; old.title = old.canon ? (CANON[old.canon].alt || `Former Senator of ${world().name}`) : `Former Senator of ${world().name}`; }
         home.senatorId = "player";
-    } else if (!holdsSeat && home.senatorId === "player") {
+    } else if (!holdsSeat && home.senatorId === "player" && G.allegiance !== "hutt") {
         const sen = makeNpc({ world: G.worldKey, title: `Senator of ${world().name}`, arena: "senate", rel: ri(-20, 10) });
         G.npcs.push(sen);
         home.senatorId = sen.id;
@@ -470,6 +502,11 @@ function setOffice(o, { silent = false } = {}) {
     if (!G.officesHeld.includes(o.title) && o.kind !== "outsider" && o.kind !== "candidate") G.officesHeld.push(o.title);
     const d = G.dynasty[G.dynasty.length - 1];
     if (d && !d.offices.includes(o.title)) d.offices.push(o.title);
+    if (G.record) {
+        const last = G.record.offices[G.record.offices.length - 1];
+        if (last && last.to == null) last.to = currentBBY();
+        if (o.kind !== "candidate") G.record.offices.push({ title: o.title, world: world().name, from: currentBBY(), to: null, name: G.name });
+    }
     if (!silent) log(`${G.name} becomes ${o.title}.`, "career");
 }
 
