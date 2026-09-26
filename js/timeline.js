@@ -555,6 +555,7 @@ Object.assign(SCENES, {
             choices: cat === "senate" ? [
                 { label: "Vote for the extension", go: () => { done("for"); histApply({ f: { centralists: 5, reformers: -5 } }, "the Chancellor's term"); } },
                 { label: "Vote against", go: () => { done("against"); histApply({ f: { reformers: 4, federalists: 3, centralists: -4 } }, "the Chancellor's term"); const m = canonNpc("mothma"); if (m) changeRel(m, 8, "Voted against extending the Chancellor's term."); } },
+                blockChoice("term_extension", 10, 0, () => { G.chancLocked = false; G.chancTermLeft = 6; report("An election after all", "The Chancellor must stand for re-election in six months."); }, () => done("against")),
                 { label: "Abstain", go: () => done("abstain") }
             ] : [{ label: "Continue", go: () => done(null) }] };
     },
@@ -575,6 +576,7 @@ Object.assign(SCENES, {
             choices: cat === "senate" ? [
                 { label: "Speak and vote for emergency powers", go: () => { done("for"); histApply({ f: { centralists: 6, militarists: 6, reformers: -6, federalists: -4 } }, "emergency powers"); } },
                 { label: "Speak and vote against", go: () => { done("against"); histApply({ f: { reformers: 6, federalists: 5, centralists: -6, militarists: -4 } }, "emergency powers"); } },
+                blockChoice("emergency_powers", 20, 10, () => { G.galConst.emergency = false; G.retryEmergency = monthsNow() + 5; report("The Senate keeps its power", "The Grand Army will answer to the Senate, not the Chancellor. His allies are already drafting a second attempt."); }, () => done("against")),
                 { label: "Abstain", go: () => done("abstain") }
             ] : [
                 { label: "Welcome it: the Republic needs strength", go: () => { done(null); histApply({ f: { centralists: 3, militarists: 3 } }, "emergency powers"); } },
@@ -699,6 +701,7 @@ Object.assign(SCENES, {
                 { label: "Quietly ignore the new governor", go: () => { histApply({ f: { federalists: 3, independence: 3 }, heat: 8 }, "defying the decree"); G.opinion.sep = clamp(G.opinion.sep + 4); } }
             ] : cat === "senate" ? [
                 { label: "Denounce the decree on the Senate floor", go: () => { recordVote("Sector Governance Decree", "denounced"); histApply({ f: { reformers: 4, federalists: 5, centralists: -5 }, heat: 4 }, "the governance decree"); } },
+                blockChoice("sector_governance", 15, 15, () => report("The decree is suspended", "The regional governors will have to wait. The worlds keep their own administrations — for now.")),
                 { label: "Support it: the war demands it", go: () => { recordVote("Sector Governance Decree", "supported"); histApply({ f: { centralists: 5, militarists: 3, federalists: -5 } }, "the governance decree"); } },
                 { label: "Say nothing", go: () => {} }
             ] : [{ label: "Continue", go: () => {} }] };

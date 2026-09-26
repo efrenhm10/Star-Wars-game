@@ -175,6 +175,45 @@ stops, the economy and the war.
   politicians, major galactic legislation tied to the timeline (sanctions,
   the Loyalty Act, clone army funding, emergency powers) and your own.
 
+## The Senate's power
+
+The Senate starts as a real check on the Chancellor. Every power grab it
+allows (the term extension, emergency powers, a Security Council, the HoloNet
+decree, Jedi oversight, Sector Governance, the Empire, the Imperial Budget
+Decree) drains **Senate power**, and with it what committees can do.
+
+- **Committee chairs have real power.** Every bill, including Bill Builder
+  and galactic bills, goes to a committee. A chair can hold a bill
+  indefinitely, release it for a price, fast-track it or bury it, and run
+  oversight: auditing the clone contracts or subpoenaing the Chancellery. As
+  Senate power falls, the Chancellor's allies force held bills out of
+  committee.
+- **Budgets every year.** In Month 7 each committee marks up its agency
+  against the Chancellor's request: the Grand Army (later the Imperial
+  Navy), the intelligence services (later the ISB), the Diplomatic Corps,
+  the courts, Commerce, and grants to member worlds. In Month 9 the Finance
+  chair negotiates the budget resolution with the Chancellor: pass it,
+  balance it with cuts or taxes, compromise, or force a standoff. Deficits
+  become debt. A weakened Senate's cuts are overridden by executive order,
+  and under the Empire the budget is a rubber stamp, unless you hide rebel
+  money in it.
+- **Block the power grabs.** With enough support you can organise the
+  opposition and defeat a grab on the floor. Your odds depend on your
+  allies, influence, Senate power, your evidence and the opposition bloc you
+  have built beforehand. Blocking two grabs lets the Imperial Senate keep
+  its committees.
+- **Resisting from inside the Imperial Senate:** pass secrets to the rebels,
+  give couriers transit passes, shield worlds from reprisals, read the names
+  of the dead into the record, join Mon Mothma's network, organise blocs
+  against decrees.
+- **Ministries.** The Chancellor offers a choice of portfolios. Each ministry
+  has its own desk, a budget written by a Senate committee, testimony, and
+  the Chancellor's directives, which you can carry out, slow-walk, refuse or
+  leak. You can resign in protest, or resign to run for the Senate.
+- **Career crossroads.** Six months before each election you choose: run
+  again, run for another office on your world (senator, governor, mayor and
+  so on), step down, or retire.
+
 ## The dark times
 
 Palpatine does not forget his enemies. Investigating him, hauling his office
@@ -185,7 +224,7 @@ before committees, refusing him and speaking out all raise your **danger**
   researcher found dead in a "speeder accident". Once the war begins, and
   under the Empire, assassins come for you, and the ISB knocks at 0300.
   Bodyguards, a Jedi protector, a dead man's switch, hiding your family,
-  going public or lying low can keep you alive. None of them is certain.
+  going public, a permanent security detail or lying low can keep you alive. None of them is certain.
 - **Investigate the Chancellor.** Follow the trail from the Naboo blockade
   to the clone army's money, the Serenno channel, "Darth Sidious" and the
   truth. Then share it with Bail and Mon Mothma, take it to the Jedi, or
@@ -243,6 +282,7 @@ before committees, refusing him and speaking out all raise your **danger**
 | `js/politics.js` | Monthly simulation, elections, constitution, careers, dynasty |
 | `js/events.js`, `js/scenes.js` | Dossiers and full-screen scenes |
 | `js/empire.js` | Palpatine's enemies: danger, assassination attempts, the investigation, resistance governments, the underground, Imperial-era scenes |
+| `js/senate.js` | Senate power, committee chairs, annual budgets, power grabs and blocking them, Imperial Senate resistance, ministries, career crossroads |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |
 | `js/ui.js`, `js/ui_world.js`, `js/ui_issues.js`, `js/main.js` | Interface and input |

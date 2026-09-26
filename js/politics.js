@@ -37,6 +37,7 @@ function endMonth() {
     tickOpinion();
     tickWar();
     tickEmpire();
+    tickSenate();
     tickLegislature();
     tickAppropriations();
     tickIssues();
@@ -130,6 +131,7 @@ function tickGalaxy() {
 
 function tickLegislature() {
     G.bills.slice().forEach(b => {
+        if (b.held) return;
         if (b.stuck) { if (chance(20)) b.stuck = null; else return; }
         if (G.agenda === b.id) b.momentum += 4;
         b.voteIn--;
@@ -201,12 +203,14 @@ function tickOffice() {
     if (o.termLeft != null && k !== "outsider") {
         o.termLeft--;
         if (isElected() && o.termLimit > 0 && o.termsServed + 1 >= o.termLimit && o.termLeft === 12) addDossier("final_term", {});
+        if (isElected() && k !== "chancellor" && o.termLeft === 6 && !o.plan && !G.autocrat) pushScene("crossroads", {});
         if (o.termLeft <= 0) {
             if (k === "opposition" || k === "candidate") pushScene("campaign", { mode: "candidate", target: o.target });
             else if (k === "chancellor") pushScene("chancellor_election", { incumbent: true });
             else if (isElected()) {
                 o.termsServed++;
-                if (o.termLimit > 0 && o.termsServed >= o.termLimit && !G.autocrat) pushScene("term_limit", {});
+                if (o.plan && o.plan !== "reelect" && resolveCareerPlan(o)) { /* the player chose another path at the crossroads */ }
+                else if (o.termLimit > 0 && o.termsServed >= o.termLimit && !G.autocrat) pushScene("term_limit", {});
                 else if (G.autocrat) { o.termLeft = o.termYears * 12; report("No election is held", "The election date passes. Your government announces that 'conditions do not permit' a vote.", applyEffects({ trust: -6, unrest: 8, i: { courts: -5 } })); }
                 else if (k === "local" && o.rung < 3) pushScene("career_choice", {});
                 else pushScene("campaign", { mode: "reelection" });
@@ -733,7 +737,7 @@ function beginSuccessor(s, roleIndex) {
     if (s.relation === "Your child" && SPECIES[heirApp.species].skins.length > 1 && chance(40)) heirApp.skin = pick(SPECIES[heirApp.species].skins);
     G.app = heirApp;
     G.committees = []; G.chairOf = null; G.seniority = 0; G.signed2000 = false; G.secretRebel = false; G.isb = 0; G.homeDelivered = 0;
-    G.wrath = Math.round((G.wrath || 0) * 0.3); G.probe = null; G.security = 0; G.threat = {}; G.deadSwitch = false; G.ug = null; initEmpireState();
+    G.bloc = 0; G.wrath = Math.round((G.wrath || 0) * 0.3); G.probe = null; G.security = 0; G.threat = {}; G.deadSwitch = false; G.ug = null; initEmpireState();
     livingNpcs().forEach(n => {
         const old = n.rel;
         n.rel = Math.round(n.rel * 0.5);

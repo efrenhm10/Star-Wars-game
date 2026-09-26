@@ -490,15 +490,14 @@ const EVENTS = {
         weight: 0, deadline: 3,
         build: (g, c) => {
             const n = npc(c.npcId);
-            const m = MINISTRIES.find(x => x.faction === G.ideology) || pick(MINISTRIES);
             return {
                 title: "An Offer from the Chancellery", from: n ? n.name : "The Chancellor",
-                text: `The Supreme Chancellor offers you the post of ${m.name}. You would give up your Senate seat — and serve at the Chancellor's pleasure.`,
+                text: "The Supreme Chancellor offers you a place in the cabinet, and lets you choose your portfolio. You would give up your Senate seat — and serve at the Chancellor's pleasure.",
                 choices: [
-                    { label: `Accept: become ${m.name}`, run: () => { setOffice(makeOffice({ title: m.name, kind: "minister", ministry: m.key })); if (n) changeRel(n, 10, "Accepted a place in their government."); applyEffects({ influence: 12 }); }, msg: "You clear your Senate office and move into the ministry." },
+                    ...ministryOfferChoices(n, c),
                     { label: "Decline — stay in the Senate", run: () => n && changeRel(n, -5), msg: "The Chancellor is surprised. Some think you're waiting for something bigger." }
                 ],
-                def: 1
+                def: ministryOfferChoices(n, c).length
             };
         }
     },

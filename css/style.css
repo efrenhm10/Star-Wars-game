@@ -495,3 +495,6 @@ ul.fallen li { color: var(--muted, #8a93a6); }
 ul.comrades li.dead { text-decoration: line-through; opacity: 0.55; }
 ul.comrades li.captured { color: var(--against); }
 ul.comrades li.left { opacity: 0.55; }
+
+.safety-fold summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.safety-fold[open] summary { margin-bottom: 8px; }

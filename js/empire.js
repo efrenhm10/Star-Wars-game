@@ -67,16 +67,16 @@ function probeChancellor(how) {
     if (how === "informant" && G.funds < 1) return toast("Not enough funds", "Informants cost 1M credits.");
     if (!spendAP(how === "informant" ? 3 : 4)) return;
     const before = p.progress;
-    let ok;
+    let gain = 0, ok;
     if (how === "records") {
         ok = chance(45 + G.influence * 0.3 + (G.committees.includes("intelligence") ? 15 : 0) + (G.committees.includes("finance") ? 8 : 0));
-        if (ok) p.progress = Math.min(100, p.progress + ri(12, 20));
+        if (ok) gain = ri(12, 20);
         addWrath(5 + before / 12, "Someone in the Chancellor's office has noticed what you're reading.");
         if (!ok) report("Dead ends", "Files missing, archives sealed, clerks who suddenly remember nothing.");
     } else {
         applyEffects({ funds: -1 });
         ok = chance(60);
-        if (ok) p.progress = Math.min(100, p.progress + ri(18, 26));
+        if (ok) gain = ri(18, 26);
         addWrath(8 + before / 10, "An informant talked — to both sides.");
         if (chance(22)) {
             const who = randomName(G.worldKey);
@@ -85,12 +85,20 @@ function probeChancellor(how) {
             report("💀 Your source is dead", `${who}, who had been feeding you documents, is found dead in the lower levels. The police call it a robbery.`);
         } else if (!ok) report("The informant bolts", "Your source takes the credits and disappears.");
     }
+    if (gain) advanceProbe(gain);
+    render();
+}
+
+function advanceProbe(n) {
+    initEmpireState();
+    const p = G.probe;
+    const before = p.progress;
+    p.progress = Math.min(100, p.progress + n);
     PROBE_CLUES.filter(c => c.at > before && c.at <= p.progress).forEach(c => {
         p.clues.push(c.at);
         report(`🔎 ${c.title}`, c.text());
         log(`🔎 Investigation: ${c.title}`, "danger");
     });
-    render();
 }
 
 function useEvidence(kind) {
@@ -128,13 +136,17 @@ function useEvidence(kind) {
 
 function safetyAction(t) {
     initEmpireState();
-    const costs = { guards: 2, jedi_guard: 3, deadswitch: 3, laylow: 2, public: 3, family: 2, speak: 3 };
+    const costs = { guards: 2, detail: 2, jedi_guard: 3, deadswitch: 3, laylow: 2, public: 3, family: 2, speak: 3 };
+    if (t === "detail" && G.detail) { G.detail = false; report("Security detail dismissed", "You let your permanent security detail go."); return render(); }
+    if (t === "detail" && G.funds < 0.5) return toast("Not enough funds", "A permanent detail costs 0.2M credits a month.");
+    if (t === "jedi_guard" && isEmpireEra()) return toast("The Jedi are gone", "There is no one left to ask.");
     if ((t === "guards" && G.funds < 1) || (t === "family" && G.funds < 0.5)) return toast("Not enough funds", "Protection costs money.");
     if (t === "deadswitch" && G.probe.progress < 20) return toast("Nothing to protect", "A dead man's switch needs evidence behind it.");
     if (!spendAP(costs[t])) return;
     let ch = [];
     switch (t) {
         case "guards": G.security = Math.min(100, G.security + 25); ch = applyEffects({ funds: -1 }); report("🛡️ Protection hired", "Former Republic commandos, paid well and asked no questions.", ch); break;
+        case "detail": G.detail = true; G.security = Math.max(G.security, 40); report("🛡️ A permanent security detail", "Armoured speeders, vetted guards, a different route home every night. 0.2M credits a month."); break;
         case "jedi_guard": G.security = Math.min(100, G.security + 35); addWrath(4); report("🗡️ A Jedi protector", "The Council assigns a Jedi Knight to your security detail. The Chancellor's office notes the Jedi's interest in you."); break;
         case "deadswitch": G.deadSwitch = true; report("🔐 A dead man's switch", "If you die, everything you know goes to every newsroom in the galaxy. Killing you just got more expensive."); break;
         case "laylow": G.threat.laylow = 6; ch = applyEffects({ rep: -3, trust: -2, f: { reformers: -2 } }); report("🤫 Lying low", "For six months you vote with the majority and say nothing interesting. Your allies notice."); break;
@@ -354,7 +366,7 @@ function empirePanels() {
     let out = "";
     if (G.revolt && governing()) out += revoltPanel();
     if (canProbe()) out += probePanel();
-    if (palAlive() && !isUnderground() && !inImperialPrison() && (danger() >= 15 || canProbe() || isEmpireEra())) out += safetyPanel();
+    if (palAlive() && !isUnderground() && !inImperialPrison() && (danger() >= 15 || canProbe() || isEmpireEra() || ["senate", "gov"].includes(roleCat()))) out += safetyPanel();
     return out;
 }
 
@@ -373,20 +385,25 @@ function probePanel() {
 function safetyPanel() {
     const d = danger();
     const emp = isEmpireEra();
-    const jedi = !emp && G.era !== "republic";
+    const jedi = !emp;
     const descr = d >= 70 ? `${emp ? "The ISB and the Emperor's agents" : "The Chancellor"} want you dead. It is a question of when.` : d >= 50 ? "You are marked. Accidents happen to people like you." : d >= 30 ? "You are being watched. Your comms are not private." : d >= 15 ? "You have been noticed." : "Nobody important is paying attention to you. Yet.";
-    return panel(`☠️ Your safety — ${dangerLabel(d)}`, `<p class="small">${descr}</p>
+    const calm = d < 15 && !isEmpireEra() && !G.fallen.length;
+    const inner = `<p class="small">${descr}</p>
         ${statRow("Danger", dangerLabel(d), d, "bad")}
         ${statRow("Protection", G.security >= 50 ? "strong" : G.security >= 20 ? "some" : "almost none", G.security, "good")}
         <p class="muted small">${G.deadSwitch ? "🔐 Dead man's switch set. " : ""}${G.threat.familySafe ? "🚀 Family hidden offworld. " : ""}${G.threat.laylow > 0 ? `🤫 Lying low (${G.threat.laylow} months). ` : ""}</p>
         ${tact("safety", emp ? "📣 Denounce the Emperor" : "📣 Denounce the Chancellor's power grab", 3, "Reputation and allies. He will hear it.", 'data-t="speak"')}
         ${tact("safety", "🛡️ Hire bodyguards", 2, "1M credits. Protection fades over time.", 'data-t="guards"')}
+        ${tact("safety", G.detail ? "🛡️ Dismiss your permanent security detail" : "🛡️ Keep a permanent security detail", 2, G.detail ? "Saves 0.2M a month." : "0.2M credits a month. Protection never falls below 40.", 'data-t="detail"')}
         ${jedi ? tact("safety", "🗡️ Ask the Jedi for protection", 3, "", 'data-t="jedi_guard"') : ""}
         ${G.probe.progress >= 20 && !G.deadSwitch ? tact("safety", "🔐 Set a dead man's switch", 3, "If you die, the evidence goes public.", 'data-t="deadswitch"') : ""}
         ${!G.threat.familySafe && G.family.spouse ? tact("safety", "🚀 Send your family into hiding", 2, "0.5M credits.", 'data-t="family"') : ""}
         ${tact("safety", "📣 Go public about the threats", 3, "Hard to kill someone everyone's watching.", 'data-t="public"')}
         ${!(G.threat.laylow > 0) ? tact("safety", "🤫 Lie low for six months", 2, "Danger fades. So does your reputation.", 'data-t="laylow"') : ""}
-        ${G.fallen.length ? `<h4>The fallen</h4><ul class="small fallen">${G.fallen.slice(0, 6).map(f => `<li><b>${esc(f.name)}</b> — ${esc(f.how)} (${esc(f.year)})</li>`).join("")}</ul>` : ""}`, "danger");
+        ${G.fallen.length ? `<h4>The fallen</h4><ul class="small fallen">${G.fallen.slice(0, 6).map(f => `<li><b>${esc(f.name)}</b> — ${esc(f.how)} (${esc(f.year)})</li>`).join("")}</ul>` : ""}`;
+    // While nobody is after you, keep it tucked away.
+    if (calm) return panel("", `<details class="safety-fold"><summary>🛡️ Your safety — ${dangerLabel(d)} · protection ${G.security >= 50 ? "strong" : G.security >= 20 ? "some" : "almost none"}</summary>${inner}</details>`);
+    return panel(`☠️ Your safety — ${dangerLabel(d)}`, inner, "danger");
 }
 
 function revoltPanel() {
@@ -704,6 +721,10 @@ HISTORY.push(
 function tickEmpire() {
     initEmpireState();
     G.security = Math.max(0, G.security - 1);
+    if (G.detail) {
+        if (G.funds >= 0.2) { G.funds -= 0.2; G.security = Math.max(G.security, 40); }
+        else { G.detail = false; report("Security detail dismissed", "You can no longer pay your security detail."); }
+    }
     if (G.threat.laylow > 0) { G.threat.laylow--; G.wrath = Math.max(0, G.wrath - 3); }
     else G.wrath = Math.max(0, G.wrath - 0.6);
     if (G.era === "newrepublic") {

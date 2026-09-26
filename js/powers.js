@@ -148,7 +148,9 @@ const BILL_COMMITTEE = {
 function committeeFor(b) {
     if (b.petition) return "defense";
     if (b.key.startsWith("aid_")) return "finance";
-    return BILL_COMMITTEE[b.key] || null;
+    if (BILL_COMMITTEE[b.key]) return BILL_COMMITTEE[b.key];
+    if (MAJOR_COMMITTEE[b.key]) return MAJOR_COMMITTEE[b.key];
+    return (b.fx && CAT_COMMITTEE[b.fx.cat]) || null;
 }
 
 function initCommittees() {
@@ -211,6 +213,8 @@ function gateBill(b) {
     const chair = npc(chairId);
     if (!chair || !chair.alive) return;
     const s = b.stance[chair.faction] || 0;
+    // A weakened Senate can't stop the Chancellor's own bills in committee.
+    if (senatePower() < 35 && (b.fx.major || (chancellor() && b.sponsor === chancellor().id))) return;
     if (s <= -2 && !(b.sponsor === "player" && chair.rel >= 30)) b.stuck = chairId;
 }
 
@@ -292,7 +296,7 @@ function appropriationsMarkup() {
 
 function tickAppropriations() {
     if (G.office.kind === "senator") G.seniority = (G.seniority || 0) + 1;
-    if (G.month === 1) G.approPool = G.war ? 900 : 1240;
+    if (G.month === 1) G.approPool = Math.round((G.war ? 900 : 1240) * ((G.budget && G.budget.grantsRatio) || 1));
     if (G.month === 10) appropriationsMarkup();
     G.earmarks.filter(e => e.status === "building").forEach(e => {
         e.monthsLeft--;
