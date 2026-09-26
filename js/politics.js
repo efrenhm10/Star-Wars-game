@@ -36,6 +36,7 @@ function endMonth() {
     tickGalaxy();
     tickOpinion();
     tickWar();
+    tickEmpire();
     tickLegislature();
     tickAppropriations();
     tickIssues();
@@ -732,6 +733,7 @@ function beginSuccessor(s, roleIndex) {
     if (s.relation === "Your child" && SPECIES[heirApp.species].skins.length > 1 && chance(40)) heirApp.skin = pick(SPECIES[heirApp.species].skins);
     G.app = heirApp;
     G.committees = []; G.chairOf = null; G.seniority = 0; G.signed2000 = false; G.secretRebel = false; G.isb = 0; G.homeDelivered = 0;
+    G.wrath = Math.round((G.wrath || 0) * 0.3); G.probe = null; G.security = 0; G.threat = {}; G.deadSwitch = false; G.ug = null; initEmpireState();
     livingNpcs().forEach(n => {
         const old = n.rel;
         n.rel = Math.round(n.rel * 0.5);

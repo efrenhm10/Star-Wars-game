@@ -307,6 +307,8 @@ function remember(n, text) {
 
 function changeRel(n, d, memory) {
     n.rel = clamp(n.rel + d, -100, 100);
+    // Palpatine does not forget his enemies.
+    if (n.canon === "palpatine" && d < 0 && typeof addWrath === "function") addWrath(-d * 0.5);
     if (memory) remember(n, memory);
 }
 

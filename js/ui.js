@@ -70,7 +70,7 @@ function renderHud() {
             <div class="hud-portrait">${renderPortrait(G.app, 46)}</div>
             <div>
                 <div class="hud-name">${esc(G.name)}</div>
-                <div class="hud-office">${esc(o.title)} · ${esc(world().name)} · <span class="gen">GEN ${G.generation}</span>${G.autocrat ? ' · <span class="c-against">RULING WITHOUT MANDATE</span>' : ""}</div>
+                <div class="hud-office">${esc(o.title)} · ${esc(world().name)} · <span class="gen">GEN ${G.generation}</span>${dangerPill()}${G.autocrat ? ' · <span class="c-against">RULING WITHOUT MANDATE</span>' : ""}</div>
                 <div class="hud-office"><span style="color:${ALIGN_COLORS[G.allegiance]}">● ${ALIGN_NAMES[G.allegiance]}</span>${G.siege ? ' · <span class="c-against">⚔️ UNDER ATTACK</span>' : ""}${G.occupied ? ' · <span class="c-against">🏴 OCCUPIED</span>' : ""}</div>
             </div>
         </div>
@@ -222,7 +222,9 @@ function viewChamber() {
     const done = G.completedBills || {};
     const introducible = Object.entries(BILLS).filter(([k, t]) => t.arena === a && !done[k] && !G.bills.some(x => x.key === k) && (!t.era || t.era.includes(G.era))).slice(0, 6);
     const canIntroduce = a === "senate" ? ["senator", "chancellor"].includes(G.office.kind) : G.office.kind !== "outsider";
-    const intro = canIntroduce ? panel("✍️ Your legislation", `<p class="small">Write your own bill in the <b>Bill Builder</b>, or start from an issue on your Agenda.</p><button class="primary" data-act="builder-open">Open the Bill Builder</button>
+    const intro = canIntroduce ? panel("✍️ Your legislation", a === "senate" ? `<p class="small">A senator writes two kinds of law. <b>Laws for ${esc(world().name)}</b> are cheaper and easier to control, but other senators have no stake in them. <b>Galaxy-wide laws</b> bind every member world: a bigger fight, a bigger cost, and a bigger legacy.</p>
+        <div class="row"><button class="primary" data-act="builder-open" data-scope="planet">🪐 Write a law for ${esc(world().name)}</button><button class="primary" data-act="builder-open" data-scope="galaxy">🌌 Write a galaxy-wide law</button></div>
+        <h4>🌌 Galaxy-wide model legislation</h4>` : `<p class="small">Write your own bill in the <b>Bill Builder</b>, or start from an issue on your Agenda.</p><button class="primary" data-act="builder-open">Open the Bill Builder</button>
         <h4>Model legislation</h4><p class="muted small">Pre-written bills of this era. Completed laws never reappear. Costs 6 capital and 6 influence.</p>
         <div class="bill-list">${introducible.map(([k, t]) => `<button class="secondary" data-act="introduce" data-key="${k}"><b>${esc(t.title)}</b><span class="muted small">${esc(t.desc)}</span></button>`).join("")}</div>`) : "";
     const other = G.bills.filter(x => x.arena !== a).map(x => `<li>Bill ${x.num}: ${esc(x.title)} — vote in ${x.voteIn} mo</li>`).join("");
@@ -264,13 +266,14 @@ function viewChamber() {
             <div class="col-main">
                 ${panel(`BILL ${b.num}: ${esc(b.title)}`, `
                     ${stageBar(billStage(b))}
+                    ${scopeTag(b)}
                     <p>${esc(b.desc)}${b.amended ? ' <span class="hint">amended</span>' : ""}${b.sponsor === "player" ? ' <span class="hint up">your bill</span>' : ""}</p>
                     ${hemicycle(t)}
                     <div class="tally-row"><b class="c-for">FOR ${t.for}</b><b class="c-und">UNDECIDED ${t.und}</b><b class="c-against">AGAINST ${t.against}</b></div>
                     <div class="tally-bar"><span style="width:${w(t.for)}"></span><span style="width:${w(t.und)}"></span><span style="width:${w(t.against)}"></span></div>
                     <p class="muted small">Vote in ${b.voteIn} month${b.voteIn === 1 ? "" : "s"} · momentum ${fmt(b.momentum)}${pv ? ` · your delegation: ${pv} votes` : ""}</p>
                     <div class="stances">${stanceRows}</div>
-                    <h4>If it passes</h4><div class="hints">${effectHints({ g: billGroupEffects(b), p: b.fx.p, gal: b.fx.gal })}</div>
+                    <h4>If it passes</h4><div class="hints">${effectHints({ g: billGroupEffects(b), p: b.fx.p || (b.sponsor === "player" ? b.fx.perYear : undefined), gal: b.fx.gal || b.fx.galPerYear || undefined })}</div>${b.fx.worldPerYear ? `<p class="small muted">${billScope(b) === "galaxy" ? "Every member world gains a little prosperity and stability each year." : `${esc(worldName((b.fx.worldKeys || [G.worldKey])[0]))} gains prosperity and stability.`}</p>` : ""}
                 `)}
                 ${panel("Delegations", `<div class="table-wrap"><table class="deleg"><tr><th>Delegation</th><th>Faction</th><th>Relation</th><th>Position</th><th></th></tr>${rows}</table></div>`)}
             </div>

@@ -52,6 +52,10 @@ const ACTIONS = {
     petitionup: d => petitionUp(d.w),
     petition: () => startPetition(),
     rebel: d => rebelAction(d.t),
+    probe: d => probeChancellor(d.t),
+    evidence: d => useEvidence(d.t),
+    safety: d => safetyAction(d.t),
+    revolt: d => revoltAction(d.t),
 
     interview: d => interview(d.key),
     press: () => pressConference(),
@@ -78,7 +82,7 @@ const ACTIONS = {
     issue: d => resolveIssue(d.uid, d.a),
     hometour: () => homeTour(),
     special: d => specialAction(d.t),
-    "builder-open": () => openBuilderFor(null),
+    "builder-open": d => { openBuilderFor(null); if (d.scope && ui.builder) { ui.builder.scope = d.scope; render(); } },
     "builder-cancel": () => { ui.builder = null; ui.builderIssue = null; render(); },
     "builder-submit": () => submitBuilder(ui.builder, ui.builderIssue),
     gobill: d => { const b = G.bills.find(x => x.id === d.id); if (b) { ui.bill = b.id; ui.arenaSel = b.arena; view = "chamber"; render(); } },
@@ -160,7 +164,7 @@ function boot() {
     $("#continueBtn").addEventListener("click", () => {
         if (loadGame() && G.record) {
             // Bring older saves up to date.
-            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {};
+            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {}; initEmpireState();
             if (world().special && G.assembly == null && G.lendingRate == null && G.intel == null && G.food == null && G.corpPower == null) initSpecial();
             view = "office"; showScreen("play"); render();
         }

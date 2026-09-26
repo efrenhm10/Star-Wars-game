@@ -149,14 +149,14 @@ function warPanel() {
 function viewPowers() {
     const L = lens();
     const k = G.office.kind;
-    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${specialPowers()}`;
+    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${empirePanels()}${specialPowers()}`;
     if (k === "senator") out += senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += rolePowers();
     else if (L === "court") out += courtDesk() + (canDecree() ? executiveDesk() : "") + rolePowers();
     else if (L === "executive" || L === "command") out += executiveDesk() + rolePowers();
     else if (L === "city") out += cityDesk() + rolePowers();
-    else if (L === "underground") out += undergroundDesk();
+    else if (L === "underground") out += ugDesk();
     else out += rolePowers();
     return out;
 }
@@ -282,13 +282,6 @@ function cityDesk() {
             ${tact("petitionup", "Petition the planetary government for protection", 3, "", 'data-w="defence"')}`)}
     </div></div>`;
 }
-
-function undergroundDesk() {
-    return `<div class="cols"><div class="col-main">${panel("✊ The Rebellion", `${statRow("Rebellion strength", Math.round(G.rebellion), G.rebellion, "good")}${statRow("Imperial attention", Math.round(G.isb || 0) + Math.round(G.heat), Math.min(100, (G.isb || 0) + G.heat), "bad")}
-        ${tact("rebel", "Recruit cells", 3, "", 'data-t="recruit"')}${tact("rebel", "Sabotage an Imperial project", 5, "Dangerous.", 'data-t="sabotage"')}${tact("rebel", "Fund the Alliance", 3, "1M credits.", 'data-t="fund"')}`)}</div>
-        <div class="col-side">${rolePowers()}</div></div>`;
-}
-
 
 // ── Galaxy ────────────────────────────────────────────────────────
 

@@ -165,9 +165,43 @@ stops, the economy and the war.
   amount, funding source, agency, duration and provisions. It shows you the
   title, cost, benefits, supporters, opponents and risks before you
   introduce the bill.
+- **Senators write two kinds of law.** A law for your own world is cheaper
+  and easier to control, but other senators have no stake in it, so you need
+  cosponsors and trades. A galaxy-wide law binds every member world. It costs
+  four times as much and is fought over harder, but it moves the galaxy's
+  trade, military and refugee numbers and every world's prosperity, and it
+  builds a bigger legacy. Other senators write both kinds too.
 - **Three kinds of legislation reach the floor:** bills from other
   politicians, major galactic legislation tied to the timeline (sanctions,
   the Loyalty Act, clone army funding, emergency powers) and your own.
+
+## The dark times
+
+Palpatine does not forget his enemies. Investigating him, hauling his office
+before committees, refusing him and speaking out all raise your **danger**
+(Noticed, Watched, Marked, Hunted), which is shown beside your name.
+
+- **He answers.** First a warning over tea, then a smear campaign, then a
+  researcher found dead in a "speeder accident". Once the war begins, and
+  under the Empire, assassins come for you, and the ISB knocks at 0300.
+  Bodyguards, a Jedi protector, a dead man's switch, hiding your family,
+  going public or lying low can keep you alive. None of them is certain.
+- **Investigate the Chancellor.** Follow the trail from the Naboo blockade
+  to the clone army's money, the Serenno channel, "Darth Sidious" and the
+  truth. Then share it with Bail and Mon Mothma, take it to the Jedi, or
+  publish it and become the most dangerous person in the Senate.
+- **At the fall of the Republic you choose:** serve the Empire; stay in the
+  Senate and fight from inside; declare a **resistance government** (an
+  ultimatum, Star Destroyers, bombardment, a war room, a government in
+  exile); or **go underground**.
+- **The underground is a different game.** You are no longer a politician.
+  You run cells with named comrades, gather intelligence, sabotage, run
+  pirate broadcasts, smuggle people out and plan major operations. ISB
+  exposure brings raids, captured comrades, informants, reprisals against
+  civilians, interrogation and labour camps.
+- **The Empire's ruthlessness is shown in scenes:** a Jedi fugitive at your
+  door, the purge of the Petition of the 2,000, the Public Order
+  Resentencing Directive, Aldhani, Ferrix, Jedha and Scarif.
 
 ## War comes home
 
@@ -208,6 +242,7 @@ stops, the economy and the war.
 | `js/legislature.js` | Bills, blocs, lobbying, votes, committee gates |
 | `js/politics.js` | Monthly simulation, elections, constitution, careers, dynasty |
 | `js/events.js`, `js/scenes.js` | Dossiers and full-screen scenes |
+| `js/empire.js` | Palpatine's enemies: danger, assassination attempts, the investigation, resistance governments, the underground, Imperial-era scenes |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |
 | `js/ui.js`, `js/ui_world.js`, `js/ui_issues.js`, `js/main.js` | Interface and input |

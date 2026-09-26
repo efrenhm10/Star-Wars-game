@@ -462,6 +462,11 @@ function enactBill(b) {
     if (f.worldAid) e.world = { key: f.worldAid, stability: 15, prosperity: 6 };
     if (b.policyKey) G.policies[b.policyKey].level = b.policyLevel;
     if (f.custom && b.arena === "senate" && b.sponsor === "player") G.approPool -= f.cost || 0;
+    if (f.custom && b.arena === "senate" && b.sponsor === "player" && f.scope === "galaxy") {
+        e.influence = (e.influence || 0) + 6; e.rep = (e.rep || 0) + 4;
+        G.record.agreements.push(`Authored the ${b.title}, a galaxy-wide law (${eraYear(currentBBY())})`);
+        arenaNpcs("senate").filter(n => (f.stance[n.faction] || 0) >= 1).forEach(n => changeRel(n, 3));
+    }
     if (f.custom || f.program || f.major || b.sponsor === "player" || f.perYear) recordLaw(b);
     else { G.completedBills = G.completedBills || {}; G.completedBills[b.key] = true; }
     if (b.key === "ethics_reform") G.ethicsLaw = true;

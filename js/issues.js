@@ -329,7 +329,8 @@ function recordLaw(b) {
     const f = b.fx;
     const years = f.duration || (f.program ? Math.min(5, f.program.years) : 2);
     G.laws.unshift({ id: b.id, title: b.title, sponsor: b.sponsor === "player" ? G.name : b.sponsor === "floor" ? "the Senate" : ((npc(b.sponsor) || {}).name || "another member"), mine: b.sponsor === "player",
-        status: "implementation", monthsLeft: years * 12, total: years * 12, perYear: f.perYear || null, cat: f.cat || null, seeds: (f.seeds || []).slice(), arena: b.arena, year: currentBBY() });
+        status: "implementation", monthsLeft: years * 12, total: years * 12, perYear: f.perYear || null,
+        galPerYear: f.galPerYear || null, worldPerYear: f.worldPerYear || null, worldKeys: f.worldKeys || null, scope: f.scope || null, cat: f.cat || null, seeds: (f.seeds || []).slice(), arena: b.arena, year: currentBBY() });
     if (G.laws.length > 40) G.laws.length = 40;
     G.completedBills = G.completedBills || {};
     G.completedBills[b.key] = true;
@@ -339,6 +340,12 @@ function tickLaws() {
     (G.laws || []).filter(l => l.status === "implementation").forEach(l => {
         l.monthsLeft--;
         if (l.perYear && (l.arena === "local" || l.mine)) Object.entries(l.perYear).forEach(([k, v]) => { G.base[k] += v / 12 * (l.arena === "senate" ? 0.6 : 1); });
+        if (l.galPerYear) Object.entries(l.galPerYear).forEach(([k, v]) => { if (G.gal[k] != null) G.gal[k] = clamp(G.gal[k] + v / 12); });
+        if (l.worldPerYear) (l.worldKeys || Object.keys(G.galaxy)).forEach(k => {
+            const w = G.galaxy[k];
+            if (!w || w.destroyed) return;
+            Object.entries(l.worldPerYear).forEach(([s, v]) => { if (w[s] != null) w[s] = clamp(w[s] + v / 12); });
+        });
         if (l.seeds.length && l.monthsLeft === Math.floor(l.total / 2)) {
             l.seeds.forEach(s => {
                 if (!chance(55)) return;
@@ -418,10 +425,28 @@ const PROVISIONS = {
 };
 const BENEFICIARY_ADJ = { rural: "Rural", urban: "Urban", workers: "Working Families", farmers: "Farmers", youth: "Youth", students: "Student", elders: "Elder", veterans: "Veterans", business: "Small Business", elites: "Enterprise", military: "Armed Forces", unions: "Workers", traditional: "Heritage Communities", environmentalists: "Green", religious: "Community", everyone: "" };
 
+// How a galaxy-wide law in each area moves the galaxy itself.
+const GAL_EFFECTS = {
+    security: { military: 1.5 }, veterans: { military: 0.8 }, trade: { trade: 1.5 }, finance: { trade: 1 }, industry: { trade: 1 }, jobs: { trade: 0.8 },
+    refugees: { refugees: -2 }, food: { refugees: -0.8 }, health: { refugees: -0.5 }, sovereignty: { diplomacy: 1.2 }, environment: { diplomacy: 0.5 }, transit: { trade: 0.6 }
+};
+
+function billScope(b) {
+    if (b.arena !== "senate") return null;
+    return (b.fx && b.fx.scope) || "galaxy";
+}
+
+function scopeTag(b) {
+    const sc = billScope(b);
+    if (!sc) return "";
+    const where = b.fx && b.fx.worldKeys && b.fx.worldKeys.length === 1 ? worldName(b.fx.worldKeys[0]) : world().name;
+    return sc === "galaxy" ? '<span class="scope gal">🌌 Galaxy-wide law</span>' : `<span class="scope planet">🪐 For ${esc(where)} only</span>`;
+}
+
 function builderDefaults(cat) {
     const c = ISSUE_CATS[cat] || ISSUE_CATS.health;
     const senate = arena() === "senate";
-    return { cat, mech: "fund", ben: c.groups.find(g => G.groups[g] && G.groups[g].w > 0) || "everyone", amount: senate ? 250 : 1.5, funding: senate ? "appropriations" : "budget", agency: "department", years: 5, provisions: [] };
+    return { cat, scope: "planet", mech: "fund", ben: c.groups.find(g => G.groups[g] && G.groups[g].w > 0) || "everyone", amount: senate ? 250 : 1.5, funding: senate ? "appropriations" : "budget", agency: "department", years: 5, provisions: [] };
 }
 
 function compileBill(spec) {
@@ -450,7 +475,11 @@ function compileBill(spec) {
            low_income: () => { add("reformers", 1); add("corporatists", -1); addG("workers", 1); }, env_review: () => { add("reformers", 1); add("corporatists", -1); addG("environmentalists", 2); },
            worker_protections: () => { add("reformers", 1); add("corporatists", -1); addG("unions", 2); }, private_match: () => { add("corporatists", 1); costMult *= 0.7; } })[p]();
     });
-    Object.keys(st).forEach(k => { st[k] = clamp(Math.round(st[k]), -3, 3); });
+    // Scope: a law for your own world, or one that binds every member world.
+    const galactic = senate && spec.scope === "galaxy";
+    const stanceScale = !senate ? 1 : galactic ? 1.5 : 0.6;
+    if (galactic) costMult *= 4;
+    Object.keys(st).forEach(k => { st[k] = clamp(Math.round(st[k] * stanceScale), -3, 3); });
 
     // Voter reactions.
     if (spec.ben === "everyone") c.groups.forEach(k => addG(k, 2 * Math.min(scale, 2)));
@@ -469,6 +498,14 @@ function compileBill(spec) {
     if (spec.mech === "taxcredit") perYear.inequality = (perYear.inequality || 0) + 0.4 * scale;
     if (spec.provisions.includes("low_income")) perYear.inequality = (perYear.inequality || 0) - 0.5 * scale;
     if (spec.provisions.includes("env_review")) perYear.environment = (perYear.environment || 0) + 0.4;
+    // A galaxy-wide law spreads its effect: your world gets a share, and so does every other.
+    let galPerYear = null, worldPerYear = null;
+    if (galactic) {
+        Object.keys(perYear).forEach(k => { perYear[k] *= 0.5; });
+        galPerYear = GAL_EFFECTS[spec.cat] ? Object.fromEntries(Object.entries(GAL_EFFECTS[spec.cat]).map(([k, v]) => [k, v * Math.min(2, scale) * m.eff])) : null;
+        worldPerYear = { prosperity: ["jobs", "industry", "trade", "finance", "housing", "transit", "food", "water", "health", "education"].includes(spec.cat) ? 1.2 * Math.min(2, scale) * m.eff : 0.4,
+                         stability: ["security", "food", "refugees", "sovereignty", "veterans", "labor"].includes(spec.cat) ? 1.2 * Math.min(2, scale) * m.eff : 0.4 };
+    }
 
     const cost = Math.round(spec.amount * costMult * (spec.years >= 20 ? 1.5 : 1) * 10) / 10;
     const seeds = [];
@@ -481,32 +518,40 @@ function compileBill(spec) {
     if (["fund", "program"].includes(spec.mech) && scale >= 1) seeds.push("demand");
 
     const adj = BENEFICIARY_ADJ[spec.ben] || "";
-    const title = `${world().name} ${adj ? adj + " " : ""}${c.bill} ${m.noun}`.replace(/\s+/g, " ");
+    const title = `${galactic ? "Galactic" : world().name} ${adj ? adj + " " : ""}${c.bill} ${m.noun}`.replace(/\s+/g, " ");
     const fn = k => FACTIONS[k].name;
+    let supportersExtra = null;
     const supporters = Object.entries(st).filter(([, v]) => v >= 1).map(([k]) => fn(k)).concat(Object.entries(g).filter(([, v]) => v > 0).map(([k]) => GROUPS[k].name));
     const opponents = Object.entries(st).filter(([, v]) => v <= -1).map(([k]) => fn(k)).concat(Object.entries(g).filter(([, v]) => v < 0).map(([k]) => GROUPS[k].name));
-    const consequences = [`Cost: ${senate ? cost + "M credits from Republic funds" : cost + "B from the planetary treasury"}${spec.years < 20 ? ` over ${spec.years} years` : " (permanent)"}${costMult < 1 ? ` — ${m.name.toLowerCase()} costs a fraction of the ${spec.amount}${senate ? "M" : "B"} it steers` : ""}`]
+    const scopeLines = !senate ? [] : galactic
+        ? ["Scope: binds every member world — your world gets only a share of the benefit", "Every senator has a stake: expect a bigger fight, and bigger credit if it passes"]
+        : [`Scope: ${world().name} only — most senators have no stake in it; you'll need cosponsors and trades`];
+    if (galactic) { supportersExtra = "Senators from struggling worlds"; }
+    const consequences = scopeLines.concat([`Cost: ${senate ? cost + "M credits from Republic funds" : cost + "B from the planetary treasury"}${spec.years < 20 ? ` over ${spec.years} years` : " (permanent)"}${costMult < 1 ? ` — ${m.name.toLowerCase()} costs a fraction of the ${spec.amount}${senate ? "M" : "B"} it steers` : ""}${galactic ? " — four times the price of a one-world law" : ""}`])
         .concat(seeds.map(s => ({ contractor: "Risk: contractors cut corners", misuse: "Risk: funds misused without an audit", debt: "Risk: debt service squeezes other programs", luxury: "Risk: subsidies flow to luxury developments", compliance: "Risk: businesses complain of compliance costs", bureaucracy: "Risk: the new agency grows beyond its mission", demand: "Likely: success creates demand for more" }[s])));
     return {
         arena: senate ? "senate" : "local", title, custom: true, cat: spec.cat, spec,
         desc: `Purpose: address ${c.name.toLowerCase()} — ${MECHANISMS[spec.mech].name.toLowerCase()} for ${spec.ben === "everyone" ? "everyone" : GROUPS[spec.ben].name.toLowerCase()}, through ${AGENCIES[spec.agency].toLowerCase()}, funded by ${FUNDING[spec.funding].toLowerCase()}.${spec.provisions.length ? " Provisions: " + spec.provisions.map(p => PROVISIONS[p].toLowerCase()).join("; ") + "." : ""}`,
-        stance: st, g, perYear, duration: Math.min(spec.years, 10), cost, seeds, supporters, opponents, consequences,
+        stance: st, g, perYear, galPerYear, worldPerYear, scope: senate ? (galactic ? "galaxy" : "planet") : "planet", duration: Math.min(spec.years, 10), cost, seeds,
+        supporters: supportersExtra ? supporters.concat(supportersExtra) : supporters, opponents, consequences,
         treasury: senate ? 0 : -cost
     };
 }
 
 function submitBuilder(spec, issueUid) {
     const t = compileBill(spec);
-    const inf = t.arena === "senate" ? 6 : 4;
+    const inf = t.arena === "senate" ? (t.scope === "galaxy" ? 10 : 5) : 4;
     if (G.influence < inf) return toast("Not enough influence", `Introducing legislation needs ${inf} influence.`);
     if (!spendAP(6)) return;
     applyEffects({ influence: -inf });
     const b = createBill(`custom_${Date.now().toString(36)}`, "player", t);
     b.voteIn = 4; b.fx.startVoteIn = 4;
     if (G.assembly != null && t.arena === "local") b.momentum += (G.assembly - 50) / 3;
+    // Nobody else's voters benefit from a one-world law; a galaxy-wide law has natural allies.
+    if (t.arena === "senate") b.momentum += t.scope === "galaxy" ? 2 : -3;
     const i = issueUid && (G.issues || []).find(x => x.uid === issueUid);
     if (i) { i.status = "in progress"; b.issueUid = i.uid; }
-    report("✍️ Bill introduced", `You introduce the ${b.title}. It goes to committee now; the vote is in four months.`);
+    report("✍️ Bill introduced", `You introduce the ${b.title}${t.scope === "galaxy" ? ", a law for the whole galaxy" : t.arena === "senate" ? `, a law for ${world().name}` : ""}. It goes to committee now; the vote is in four months.`);
     ui.builder = null;
     view = "chamber"; ui.bill = b.id; ui.arenaSel = b.arena;
     render();
@@ -523,7 +568,18 @@ function npcGeneratedBill(a) {
     const where = worldName(sponsor.world);
     t.title = t.title.replace(world().name, where);
     t.desc = `${sponsor.name}'s bill. ` + t.desc;
-    if (a === "senate") t.perYear = null;
+    if (a === "senate") {
+        t.perYear = null;
+        if (chance(40)) {
+            t.scope = "galaxy"; t.worldKeys = null;
+            t.title = t.title.replace(where, "Galactic");
+            t.galPerYear = GAL_EFFECTS[cat] || null;
+            t.worldPerYear = { prosperity: 0.6, stability: 0.4 };
+        } else {
+            t.scope = "planet"; t.worldKeys = [sponsor.world]; t.galPerYear = null;
+            t.worldPerYear = { prosperity: 1.5, stability: 0.8 };
+        }
+    }
     const b = createBill(`npc_${Date.now().toString(36)}${ri(0, 999)}`, sponsor.id, t);
     return b;
 }

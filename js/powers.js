@@ -110,7 +110,12 @@ const ROLE_SCHEMA = {
     outsider: { lens: "movement", label: "Outside Office", powers: "Influence, money, networks.", responsibilities: "Your own.", budget: "Your own.", legislative: "None.", appointment: "None.", military: "None.", diplomatic: "Unofficial.", constraints: "No formal power at all." }
 };
 
-function roleSchema(kind = G.office.kind) { return ROLE_SCHEMA[kind] || ROLE_SCHEMA.outsider; }
+const UNDERGROUND_SCHEMA = { lens: "underground", label: "The Underground", powers: "Cells, intelligence, sabotage, the truth.", responsibilities: "Keep your people alive.", budget: "Whatever you can smuggle.", legislative: "None.", appointment: "None.", military: "Sabotage and raids.", diplomatic: "The Rebel Alliance.", constraints: "Every action raises your ISB exposure. The Empire punishes civilians for every attack." };
+
+function roleSchema(kind = G.office.kind) {
+    if (kind === "outsider" && G.office && /Rebel/.test(G.office.sub || "")) return UNDERGROUND_SCHEMA;
+    return ROLE_SCHEMA[kind] || ROLE_SCHEMA.outsider;
+}
 
 function lens() {
     if (G.office.kind === "outsider" && /Rebel/.test(G.office.sub || "")) return "underground";
@@ -511,13 +516,5 @@ function petitionUp(what) {
 // ── The underground ───────────────────────────────────────────────
 
 function rebelAction(type) {
-    if (!spendAP(type === "sabotage" ? 5 : 3)) return;
-    let ch = [];
-    if (type === "recruit") { G.rebellion = clamp(G.rebellion + 2); ch = applyEffects({ heat: 4, g: { youth: 3 } }); report("Cells recruited", "New recruits join the underground.", ch); }
-    if (type === "sabotage") {
-        if (chance(25)) { G.record.arrests.push(eraYear(currentBBY())); report("Captured", "The sabotage mission is betrayed. You are taken."); enterOutsider("Prisoner", 24); return render(); }
-        G.rebellion = clamp(G.rebellion + 4); ch = applyEffects({ heat: 8 }); report("Sabotage", "An Imperial supply depot burns.", ch);
-    }
-    if (type === "fund") { if (G.funds < 1) { G.ap += 3; return toast("Not enough funds", "You need 1M credits."); } G.rebellion = clamp(G.rebellion + 3); ch = applyEffects({ funds: -1 }); report("Funds sent", "Credits reach the Alliance through a dozen shell companies.", ch); }
-    render();
+    return ugAction(type);
 }

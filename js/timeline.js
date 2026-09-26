@@ -722,10 +722,11 @@ Object.assign(SCENES, {
         const choices = [];
         if (inOffice) choices.push(
             { label: "Accept the Empire", hint: cat === "senate" ? "Become an Imperial Senator." : "Become an Imperial administrator.", go: () => imperialPath("accept") },
-            { label: "Resist politically", hint: "Stay in office as part of an emerging opposition. The ISB will be watching.", go: () => imperialPath("resist") },
+            { label: cat === "senate" ? "Stay in the Senate and fight him from inside" : "Stay in office and oppose him openly", hint: "Keep your seat and speak out. You will become a target — the ISB, and worse.", go: () => imperialPath("resist") },
+            ...(cat === "gov" ? [{ label: `Refuse the Empire: declare a ${world().name} resistance government`, hint: "Open revolt. The Empire will answer with Star Destroyers.", go: () => imperialPath("revolt") }] : []),
             { label: "Attempt to preserve planetary autonomy", hint: "Negotiate special status for your world.", go: () => imperialPath("autonomy") },
             { label: "Collaborate publicly, resist privately", hint: "Serve the Empire — and secretly help its enemies.", go: () => imperialPath("double") });
-        choices.push({ label: "Join the underground", hint: "Leave formal government entirely.", go: () => imperialPath("rebel") });
+        choices.push({ label: "Break with the Empire: go underground", hint: "Leave office entirely. You become a fugitive running rebel cells.", go: () => imperialPath("rebel") });
         if (!inOffice) choices.push({ label: "Keep your head down", go: () => imperialPath("quiet") });
         return { tag: "19 BBY — THE END OF THE REPUBLIC", title: "The Republic has been reorganised into the First Galactic Empire", body, choices };
     },
@@ -745,7 +746,7 @@ Object.assign(SCENES, {
         tag: "2 BBY", title: "Mon Mothma Denounces the Emperor",
         body: `${voice("Mon Mothma", "“The truth is we are losing our democracy. The Emperor is the architect of this.”")}<p>She flees Coruscant. The scattered rebel cells unite as the Alliance to Restore the Republic.</p>`,
         choices: [
-            { label: "Join the Rebel Alliance openly", go: () => imperialPath("rebel") },
+            { label: isUnderground() ? "Bring your cells into the Alliance" : "Join the Rebel Alliance openly", go: () => { if (isUnderground()) { G.ug.supplies += 30; G.ug.cells++; G.rebellion = clamp(G.rebellion + 3); const m = canonNpc("mothma"); if (m) changeRel(m, 15, "Brought their cells into the Alliance."); } else imperialPath("rebel"); } },
             { label: "Support the Alliance in secret", go: () => { G.secretRebel = true; G.record.agreements.push("Secret supporter of the Rebel Alliance (2 BBY)"); const m = canonNpc("mothma"); if (m) changeRel(m, 20, "Secretly supported the Alliance."); } },
             { label: "Denounce her", go: () => { histApply({ f: { militarists: 5, reformers: -8 }, rep: -4 }, "Mon Mothma's defection"); const m = canonNpc("mothma"); if (m) changeRel(m, -30, "Denounced her when she defected."); } },
             { label: "Say nothing", go: () => {} }
@@ -845,6 +846,7 @@ function imperialPath(path) {
     } else if (path === "resist") {
         G.allegiance = "empire";
         G.isb = 30;
+        addWrath(15);
         report("The loyal opposition", "You stay in office and oppose the Emperor's worst excesses — carefully.", applyEffects({ f: { reformers: 8, militarists: -6 }, heat: 15, rep: 5 }));
     } else if (path === "autonomy") {
         const p = G.influence * 0.4 + w.ratings.military * 6 + w.ratings.wealth * 4 + rnd(-10, 10);
@@ -855,9 +857,22 @@ function imperialPath(path) {
         G.secretRebel = true;
         if (k === "senator") G.office.title = "Imperial Senator";
         report("A double life", "In public, you serve the Empire. In private, you will help those who fight it.", applyEffects({ f: { militarists: 4, centralists: 4 } }));
-    } else if (path === "rebel") {
+    } else if (path === "revolt") {
         G.allegiance = "rebel";
+        G.galaxy[G.worldKey].align = "rebel";
+        G.revolt = { stage: "declared", months: 0, waves: 0 };
+        G.isb = 60; addWrath(30);
+        if (pal) changeRel(pal, -30, "Declared a resistance government against the Empire.");
+        report("✊ A resistance government", `${w.name} refuses the Empire. Your government will not dissolve, will not surrender, and will not be silent. The Empire's answer is coming.`, applyEffects({ legitimacy: 10, f: { reformers: 8, independence: 8, militarists: -6, centralists: -10 }, g: { youth: 6, military: 3 } }));
+        G.record.agreements.push(`Declared ${w.name} in open resistance to the Empire (${eraYear(currentBBY())})`);
+        return;
+    } else if (path === "rebel") {
+        const wasOffice = G.office.title;
+        G.allegiance = "rebel";
+        startUnderground();
         enterOutsider("Rebel Organizer");
+        G.office.title = "Rebel cell leader";
+        if (!/Rebel|Prisoner/.test(wasOffice)) G.record.agreements.push(`Gave up the office of ${wasOffice} to fight the Empire (${eraYear(currentBBY())})`);
         G.rebellion = clamp(G.rebellion + 3);
         report("Underground", "You leave formal government and disappear into the resistance.", applyEffects({ f: { reformers: 10, independence: 6, militarists: -10 }, heat: 20 }));
         G.record.agreements.push(`Joined the resistance to the Empire (${eraYear(currentBBY())})`);

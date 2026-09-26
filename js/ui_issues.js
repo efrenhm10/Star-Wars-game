@@ -54,7 +54,7 @@ function legislationPanel() {
 function builderPanel() {
     const b = ui.builder;
     if (!b) return panel("✍️ Bill Builder", `<p class="small">Write your own legislation: choose the problem, the policy, who benefits, how much, who pays, who runs it, and for how long.</p>
-        <button class="primary" data-act="builder-open">Start a new bill</button>`);
+        ${arena() === "senate" ? `<div class="row"><button class="primary" data-act="builder-open" data-scope="planet">🪐 A law for ${esc(world().name)}</button><button class="primary" data-act="builder-open" data-scope="galaxy">🌌 A galaxy-wide law</button></div>` : '<button class="primary" data-act="builder-open">Start a new bill</button>'}`);
     const senate = arena() === "senate";
     const opt = (field, obj, cur) => `<select data-bf="${field}">${Object.entries(obj).map(([k, v]) => `<option value="${k}" ${String(cur) === String(k) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
     const cats = Object.fromEntries(Object.entries(ISSUE_CATS).map(([k, c]) => [k, `${c.icon} ${c.name}`]));
@@ -66,6 +66,7 @@ function builderPanel() {
     return panel("✍️ Bill Builder", `<div class="builder" id="builder">
         ${issue ? `<p class="small c-und">Responding to: ${esc(issue.title)}</p>` : ""}
         <div class="bgrid">
+            ${senate ? `<label>Who does this law cover?${opt("scope", { planet: `${world().name} only`, galaxy: "The whole galaxy" }, b.scope || "planet")}</label>` : ""}
             <label>What problem are you addressing?${opt("cat", cats, b.cat)}</label>
             <label>What do you want government to do?${opt("mech", Object.fromEntries(Object.entries(MECHANISMS).map(([k, m]) => [k, m.name])), b.mech)}</label>
             <label>Who receives the benefit?${opt("ben", bens, b.ben)}</label>
@@ -77,16 +78,16 @@ function builderPanel() {
         <h4>Additional provisions</h4>
         <div class="provisions">${Object.entries(PROVISIONS).map(([k, v]) => `<label class="prov"><input type="checkbox" data-bp="${k}" ${b.provisions.includes(k) ? "checked" : ""}> ${esc(v)}</label>`).join("")}</div>
         <div class="bill-preview">
-            <div class="record-title">YOUR BILL</div>
+            <div class="record-title">YOUR BILL ${senate ? (b.scope === "galaxy" ? "· 🌌 GALAXY-WIDE" : `· 🪐 FOR ${esc(world().name.toUpperCase())}`) : ""}</div>
             <h3 class="bill-title">${esc(t.title)}</h3>
             <p class="small">${esc(t.desc)}</p>
             <div class="grid2">
-                <div><h4>Benefits</h4><div class="hints">${effectHints({ p: t.perYear, g: Object.fromEntries(Object.entries(t.g).filter(([, v]) => v > 0)) })}</div></div>
+                <div><h4>Benefits</h4><div class="hints">${effectHints({ p: t.perYear, gal: t.galPerYear || undefined, g: Object.fromEntries(Object.entries(t.g).filter(([, v]) => v > 0)) })}</div>${t.worldPerYear ? '<p class="small muted">Every member world: prosperity and stability rise a little each year.</p>' : ""}</div>
                 <div><h4>Consequences</h4><ul class="small">${t.consequences.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
                 <div><h4>Support</h4><p class="small c-for">${t.supporters.map(esc).join(", ") || "—"}</p></div>
                 <div><h4>Opposition</h4><p class="small c-against">${t.opponents.map(esc).join(", ") || "—"}</p></div>
             </div>
-            <div class="row"><button class="primary" data-act="builder-submit" ${G.ap < 6 ? "disabled" : ""}>Introduce it · 6 capital · ${senate ? 6 : 4} influence</button><button class="secondary" data-act="builder-cancel">Discard</button></div>
+            <div class="row"><button class="primary" data-act="builder-submit" ${G.ap < 6 ? "disabled" : ""}>Introduce it · 6 capital · ${senate ? (b.scope === "galaxy" ? 10 : 5) : 4} influence</button><button class="secondary" data-act="builder-cancel">Discard</button></div>
         </div></div>`);
 }
 

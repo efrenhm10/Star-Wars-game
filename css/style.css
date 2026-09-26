@@ -477,3 +477,21 @@ body[data-lens="underground"] .panel { background: rgba(24, 16, 10, .9); }
 
 .promise-note { margin-top: 10px; padding: 8px 10px; border: 1px solid var(--accent2); border-radius: 8px; background: rgba(214, 168, 74, 0.08); font-size: 0.85rem; }
 .promise-note p { margin: 4px 0; }
+
+/* Law scope */
+.scope { display: inline-block; margin: 4px 0 6px; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; letter-spacing: 0.5px; border: 1px solid; }
+.scope.gal { color: var(--accent); border-color: var(--accent); }
+.scope.planet { color: var(--accent2); border-color: var(--accent2); }
+
+/* The dark times */
+.danger-pill { color: var(--und); font-weight: 600; }
+.danger-pill.hot { color: var(--against); animation: dangerPulse 2s ease-in-out infinite; }
+@keyframes dangerPulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .danger-pill.hot { animation: none; } }
+.clue { border-left: 3px solid var(--against); padding: 4px 10px; margin: 8px 0; background: rgba(232, 89, 106, 0.06); }
+.clue p { margin: 4px 0 0; }
+ul.fallen, ul.comrades { padding-left: 18px; margin: 6px 0; }
+ul.fallen li { color: var(--muted, #8a93a6); }
+ul.comrades li.dead { text-decoration: line-through; opacity: 0.55; }
+ul.comrades li.captured { color: var(--against); }
+ul.comrades li.left { opacity: 0.55; }
