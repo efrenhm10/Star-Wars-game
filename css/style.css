@@ -532,3 +532,6 @@ ul.conds { list-style: none; padding: 0; margin: 4px 0 8px; font-size: .85rem; }
 ul.conds li { margin: 3px 0; }
 .cip-cut { margin: 8px 0; padding: 4px 8px; border-top: 2px dashed var(--against); color: var(--against); font-size: .8rem; letter-spacing: .5px; }
 .pipe.over { opacity: .8; }
+details.taxinfo summary { cursor: pointer; }
+details.taxinfo[open] summary { font-weight: 600; }
+details.taxinfo p { margin: 4px 0; max-width: 520px; }

@@ -500,6 +500,34 @@ function debtPanel() {
         ${gov ? `<p class="small">Sell ten-year bonds (cheaper than an overdraft):</p><div class="row">${[2, 5, 10].map(v => `<button class="mini" data-act="sellbonds" data-v="${v}" ${G.ap < 3 ? "disabled" : ""}>${v}B · 3</button>`).join("")}</div>` : ""}`);
 }
 
+// What each tax is, who pays it, and what it does besides raise money.
+const TAX_DESC = {
+    income_tax: "A tax on what people earn. The backbone of most planetary budgets.",
+    corporate_tax: "A tax on company profits. Raises a lot, but firms threaten to move offworld.",
+    tariffs: "Duties on imported goods. Protects local producers; makes imports dearer and trading partners unhappy.",
+    mining: "Fees paid by extraction companies for the right to mine. Money now, scarred land later.",
+    sales_tax: "A levy on goods sold in every market. Easy to collect; hits the poor hardest.",
+    luxury_tax: "A tax on yachts, jewels and fine wines. Paid by the rich, and resented by them.",
+    property_tax: "A yearly tax on land and buildings. Stable revenue; landlords and older homeowners feel it.",
+    starship_fees: "Registration fees on every starship based here. Shippers grumble; most pay.",
+    docking_duties: "Charges on every ship that docks. Good revenue — until traders start avoiding your spaceports.",
+    droid_tax: "A tax on businesses for each droid they use instead of a worker. Unions love it; business doesn't.",
+    head_tax: "The same fixed sum from every adult. Simple, regressive, and deeply unpopular with the poor.",
+    estate_duty: "A tax on the great estates and inheritances of noble houses.",
+    spice_tax: "Legalise the spice trade and tax it. Takes business away from the cartels; the faithful are appalled.",
+    gambling: "Licence fees and taxes on gambling halls and sabacc dens. Revenue and jobs — and some crime.",
+    emergency_tax: "A temporary wartime levy on businesses and the wealthy."
+};
+
+function taxInfo(k) {
+    const def = POLICIES[k];
+    const payers = Object.entries(def.g || {}).filter(([g, v]) => v < 0 && G.groups[g] && G.groups[g].w > 0).sort((a, b) => a[1] - b[1]).map(([g]) => GROUPS[g].name.toLowerCase());
+    const fans = Object.entries(def.g || {}).filter(([g, v]) => v > 0 && G.groups[g] && G.groups[g].w > 0).map(([g]) => GROUPS[g].name.toLowerCase());
+    const side = Object.entries(def.fx || {}).map(([st, v]) => `${v > 0 ? "raises" : "lowers"} ${PLANET_STATS[st].name.toLowerCase()}`);
+    return `<p class="small">${esc(TAX_DESC[k] || "A source of planetary revenue.")}</p>
+        <p class="small muted">At 100% it would raise about ${(-def.cost * 12).toFixed(1)}B a year.${payers.length ? ` Hits: ${esc(payers.join(", "))}.` : ""}${fans.length ? ` Popular with: ${esc(fans.join(", "))}.` : ""}${side.length ? ` Side effects: ${side.join(", ")}.` : ""}</p>`;
+}
+
 function budgetView() {
     initLawbook();
     const pb = G.pbudget;
@@ -511,7 +539,7 @@ function budgetView() {
     const statusText = { adopted: "The budget is in force for this fiscal year.", drafting: "Budget season: draft next year's budget and submit it before Month 12.", submitted: "Your budget is before the legislature.", passed: "Next year's budget has passed. It takes effect in January.", rejected: "The legislature rejected your budget. Revise and resubmit.", continuing: "No budget passed: the government is running under a continuing resolution." }[pb.status];
     const catRows = SPEND_CATS.filter(c => pr.lines[c] || d.cats[c] !== 1).map(c => `<tr><td>${POLICY_CATS[c].name}</td><td class="num">${(pr.lines[c] || 0).toFixed(1)}B</td><td>${editable ? `<span class="stepper"><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="-0.1" ${(d.cats[c] || 1) <= 0.71 ? "disabled" : ""}>−</button><b>${Math.round((d.cats[c] || 1) * 100)}%</b><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="0.1" ${(d.cats[c] || 1) >= 1.29 ? "disabled" : ""}>+</button></span>` : `${Math.round((d.cats[c] || 1) * 100)}%`}</td></tr>
         <tr class="detail"><td colspan="3"><details><summary class="small muted">What's in it</summary>${Object.entries(POLICIES).filter(([k, def]) => def.cat === c && G.policies[k].level > 0 && def.cost > 0).map(([k, def]) => `<div class="statrow small"><span>${def.icon} ${esc(def.name)} (${levelWord(G.policies[k].level)})</span><b>${(def.cost * G.policies[k].level * 12 * (d.cats[c] || 1)).toFixed(1)}B</b></div>`).join("")}</details></td></tr>`).join("");
-    const taxRows = Object.entries(d.taxes).map(([k, lv]) => `<tr><td>${POLICIES[k].icon} ${esc(POLICIES[k].name)}</td><td class="num">${(-POLICIES[k].cost * lv * 12).toFixed(1)}B</td><td>${editable ? `<input type="range" min="5" max="100" step="5" value="${Math.round(lv * 100)}" data-pb="tax:${k}"> ${Math.round(lv * 100)}%` : `${Math.round(lv * 100)}%`}</td></tr>`).join("");
+    const taxRows = Object.entries(d.taxes).map(([k, lv]) => `<tr><td><details class="taxinfo"><summary>${POLICIES[k].icon} ${esc(POLICIES[k].name)}</summary>${taxInfo(k)}</details></td><td class="num">${(-POLICIES[k].cost * lv * 12).toFixed(1)}B</td><td>${editable ? `<input type="range" min="5" max="100" step="5" value="${Math.round(lv * 100)}" data-pb="tax:${k}"> ${Math.round(lv * 100)}%` : `${Math.round(lv * 100)}%`}</td></tr>`).join("");
     return `<div class="era-banner"><b>THE ${esc(eraYear(["drafting", "rejected", "submitted", "passed"].includes(pb.status) ? currentBBY() - 1 : currentBBY()))} BUDGET</b> · ${esc(statusText)}</div>
         <div class="cols"><div class="col-main">
         ${panel("💰 Operating budget", `<table class="results"><tr><th>Department</th><th>Per year</th><th>Funding</th></tr>${catRows}</table>
