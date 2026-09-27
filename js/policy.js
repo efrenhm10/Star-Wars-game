@@ -145,7 +145,18 @@ function statTarget(k) {
 
 // Who gets the credit (or blame) for the government's policies?
 function governing() {
-    return canDecree() && G.office.kind !== "chancellor";
+    return (canDecree() && G.office.kind !== "chancellor") || traditionalGovernment();
+}
+
+// On worlds with no other government (Ryloth, Kashyyyk, Jedha, Dathomir), the clan
+// or traditional leader *is* the planetary government — governing by council consensus.
+function traditionalGovernment() {
+    const k = G.office.kind;
+    if (!["traditional", "clan"].includes(k)) return false;
+    const roles = world().roles;
+    if (roles.some(r => ["executive", "monarch", "hereditary", "council"].includes(r.kind))) return false;
+    const first = roles.find(r => ["traditional", "clan"].includes(r.kind));
+    return !!first && first.title === G.office.title;
 }
 
 function policyGroupEffect(gk) {

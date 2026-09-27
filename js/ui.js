@@ -79,8 +79,8 @@ function renderHud() {
             <div class="hs"><span>Trust</span><b>${Math.round(G.trust)}</b></div>
             <div class="hs"><span>Influence</span><b>${Math.round(G.influence)}</b></div>
             <div class="hs capital"><span>Capital</span><b>${Math.floor(G.ap)}<small>/${cap}</small></b><div class="capbar"><i style="width:${G.ap / cap * 100}%"></i></div></div>
-            <div class="hs"><span>Funds</span><b>${G.funds.toFixed(1)}<small>M</small></b></div>
-            ${gov ? `<div class="hs"><span>Treasury</span><b class="${G.treasury < 0 ? "c-against" : ""}">${G.treasury.toFixed(1)}<small>B</small></b></div>` : ""}
+            <div class="hs" title="Your own political money: campaigns, bodyguards, trade missions, bribes."><span>Campaign funds</span><b>${G.funds.toFixed(1)}<small>M</small></b></div>
+            <div class="hs ${gov ? "" : "dim"}" title="${gov ? "The planetary government's money. You spend it: laws, budgets, projects." : "The planetary government's money. Someone else controls it."}"><span>Planetary treasury</span><b class="${G.treasury < 0 ? "c-against" : ""}">${G.treasury.toFixed(1)}<small>B</small></b></div>
             ${KIND_INFO[o.kind].legit ? `<div class="hs"><span>Legitimacy</span><b>${Math.round(G.legitimacy)}</b></div>` : ""}
         </div>
         <div class="hud-time">

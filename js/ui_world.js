@@ -153,7 +153,7 @@ function viewPowers() {
     if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
-    else if (L === "court") out += courtDesk() + (canDecree() ? executiveDesk() : "") + rolePowers();
+    else if (L === "court") out += courtDesk() + (canDecree() || traditionalGovernment() ? executiveDesk() : "") + rolePowers();
     else if (L === "executive" || L === "command") out += executiveDesk() + rolePowers();
     else if (L === "city") out += cityDesk() + rolePowers();
     else if (L === "underground") out += ugDesk();

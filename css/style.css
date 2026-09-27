@@ -510,3 +510,4 @@ button.law.pending { border-style: dashed; border-color: var(--und); }
 .fiscal-note { padding: 6px 10px; border-left: 3px solid var(--accent2); background: rgba(240, 180, 41, .07); font-size: .88rem; }
 .pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .lawbook, .pg-grid { grid-template-columns: 1fr; } }
+.hs.dim { opacity: .55; }
