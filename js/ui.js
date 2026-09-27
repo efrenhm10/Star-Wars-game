@@ -335,7 +335,7 @@ function renderWeb(defs, store, statDefs, values, sits) {
         const bad = statDefs[s].bad;
         edges.push({ from, to: `s:${s}`, good: bad ? v < 0 : v > 0, w: Math.min(5, 1 + Math.abs(v) / 4) });
     });
-    if (sel && sel.startsWith("p:")) addEdges(sel, defs[sel.slice(2)].fx);
+    if (sel && sel.startsWith("p:") && defs[sel.slice(2)]) addEdges(sel, defs[sel.slice(2)].fx);
     if (sel && sel.startsWith("s:")) L.pk.forEach(k => { const v = (defs[k].fx || {})[sel.slice(2)]; if (v && store[k].level > 0) addEdges(`p:${k}`, { [sel.slice(2)]: v }); });
     // Active situations sit on an inner ring near the stats they affect.
     sits.forEach((s, i) => {
@@ -390,7 +390,11 @@ function policyPanel(k, galactic) {
     const fxn = Object.entries(d.f || {}).map(([f, v]) => `<span class="hint ${v > 0 ? "up" : "down"}">${FACTIONS[f].icon} ${FACTIONS[f].name} ${v > 0 ? "▲" : "▼"}</span>`).join("");
     const lvl = Math.round(p.level * 100);
     return panel(`${d.icon} ${esc(d.name)}`, `
-        <p class="muted small">${POLICY_CATS[d.cat].name} · ${d.cost < 0 ? `raises ${(-d.cost * p.level).toFixed(2)}B/month` : `costs ${(d.cost * p.level).toFixed(2)}B/month`} at current level</p>
+        <p class="muted small">${POLICY_CATS[d.cat].name}</p>
+        <p class="money-line">💰 ${galactic ? (d.cost < 0 ? `Raises ${(-d.cost * p.level * 12).toFixed(1)}B a year for the Republic.` : `Costs the Republic ${(d.cost * p.level * 12).toFixed(1)}B a year.`)
+            : d.cost < 0 ? (p.level > 0 ? `Brings in <b>${(-d.cost * p.level * 12).toFixed(1)}B a year</b> at its current rate (${Math.round(p.level * 100)}%). Collecting it costs nothing.` : `Not law yet. At 30% it would bring in about ${(-d.cost * 0.3 * 12).toFixed(1)}B a year.`)
+            : d.cost > 0 ? (p.level > 0 ? `Costs <b>${(d.cost * p.level * 12 * (typeof fundMult === "function" ? fundMult(d.cat) : 1)).toFixed(1)}B a year</b> to run at its current level.` : `Not law yet. At 30% it would cost about ${(d.cost * 0.3 * 12).toFixed(1)}B a year to run.`)
+            : "Costs almost nothing to run — it works through the rules it sets."}</p>
         <div class="statrow"><span>Level</span><b>${levelWord(p.level)} (${lvl}%)</b></div>
         <div class="statrow"><span>Effect felt so far</span><b>${Math.round(p.eff * 100)}%</b></div>
         ${bar(p.eff * 100)}
@@ -435,12 +439,14 @@ function viewGovernment() {
     } else side = panel("How this works", `<p class="small">The outer ring shows the <b>laws in force</b> — find new ones in the <b>Lawbook</b>. Click any <b>policy</b> to see what it does and change it. Click a <b>value</b> (centre) to see what drives it. Red boxes are <b>situations</b> — crises that push back on everything.</p><p class="small muted">Changes take months to be felt. Voters react to the announcement immediately.</p>`);
 
     const b = gal ? galBudget() : budget();
-    const budgetPanel = panel(gal ? "Republic budget" : "Planetary budget", `
-        ${statRow("Revenue", `${b.income.toFixed(2)}B/mo`)}
-        ${statRow("Spending", `${b.spend.toFixed(2)}B/mo`)}
-        ${!gal ? statRow("Debt interest", `${b.interest.toFixed(2)}B/mo`) : ""}
-        ${statRow("Balance", `<span class="${b.net >= 0 ? "c-for" : "c-against"}">${fmt(b.net)}B/mo</span>`)}
-        ${statRow("Treasury", `${(gal ? G.galTreasury : G.treasury).toFixed(1)}B`)}
+    const budgetPanel = panel(gal ? "The whole Republic budget" : "The whole planetary budget", `
+        <p class="muted small">Totals for the entire government — not the policy selected above.</p>
+        ${statRow("Money coming in (every tax and income)", `${(b.income * 12).toFixed(1)}B/yr`)}
+        ${statRow("Money going out (every law, department and project)", `${(b.spend * 12).toFixed(1)}B/yr`)}
+        ${!gal && b.interest ? statRow("Interest on the overdraft", `${(b.interest * 12).toFixed(1)}B/yr`) : ""}
+        ${statRow(b.net >= 0 ? "Surplus" : "Deficit", `<span class="${b.net >= 0 ? "c-for" : "c-against"}">${Math.abs(b.net * 12).toFixed(1)}B/yr</span>`)}
+        ${statRow("Treasury today", `${(gal ? G.galTreasury : G.treasury).toFixed(1)}B`)}
+        ${!gal ? '<button class="secondary" data-act="gobudget">Open the full budget →</button>' : ""}
         <p class="muted small">${gal ? (G.office.kind === "chancellor" ? "You set galactic policy." : `Set by Chancellor ${chancellor() ? esc(chancellor().name) : "—"}.`) : governing() ? "You are the government. Every policy is yours to answer for." : "Set by the planetary government. Voters blame it — not you — for its policies."}</p>`);
     return `${gal ? "" : govTabs()}${toggle}<div class="cols web-cols"><div class="col-main">${panel("", web, "webpanel")}</div><div class="col-side">${side}${budgetPanel}${rolePowers()}</div></div>`;
 }
