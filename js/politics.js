@@ -42,6 +42,7 @@ function endMonth() {
     tickDilemmas();
     tickTrade();
     tickWartime();
+    tickGovDesk();
     tickLegislature();
     tickAppropriations();
     tickIssues();

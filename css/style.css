@@ -511,3 +511,22 @@ button.law.pending { border-style: dashed; border-color: var(--und); }
 .pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .lawbook, .pg-grid { grid-template-columns: 1fr; } }
 .hs.dim { opacity: .55; }
+
+/* Government desk */
+.advisor { border-bottom: 1px solid var(--line); padding: 6px 0 8px; }
+.advisor p { margin: 4px 0; }
+.infra-grid, .sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.infra, .sector { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.infra .row, .sector .row { flex-wrap: wrap; gap: 4px; }
+.offer { display: grid; grid-template-columns: max-content 1fr; gap: 6px 10px; align-items: center; margin: 8px 0; }
+.offer label { font-size: .8rem; color: var(--muted); }
+.small-seg button { padding: 3px 8px; font-size: .8rem; }
+.stepper { display: inline-flex; align-items: center; gap: 6px; }
+.stepper b { min-width: 42px; text-align: center; }
+tr.detail td { padding-top: 0; border-top: none; }
+@media (max-width: 640px) { .offer { grid-template-columns: 1fr; } }
+details.sector summary { list-style: none; cursor: pointer; }
+details.sector summary::-webkit-details-marker { display: none; }
+details.sector[open] { border-color: var(--accent); }
+ul.conds { list-style: none; padding: 0; margin: 4px 0 8px; font-size: .85rem; }
+ul.conds li { margin: 3px 0; }

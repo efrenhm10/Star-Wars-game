@@ -15,7 +15,7 @@ const ROLE_SCHEMA = {
         military: "None. You can petition, authorise and investigate.",
         diplomatic: "Sanctions, treaties and Senate resolutions.",
         constraints: "You cannot run your planet. You need votes for everything." },
-    executive: { lens: "executive", label: "Executive",
+    executive: { lens: "executive", label: "Government",
         powers: "Implement, administer, respond.",
         responsibilities: "Run the planetary government and its budget.",
         budget: "Full authority over the planetary budget — within what you can raise.",
@@ -161,7 +161,6 @@ function initCommittees() {
     G.earmarks = [];
     G.approPool = 1240;
     G.projects = [];
-    G.cabinet = {};
     G.cityFunds = 5;
     G.fortify = 0;
     const senators = livingNpcs().filter(n => n.arena === "senate").sort((a, b) => b.influence - a.influence);
@@ -309,7 +308,8 @@ function tickAppropriations() {
             e.followAt = monthsNow() + ri(4, 10);
             const iss = e.issueUid && (G.issues || []).find(x => x.uid === e.issueUid);
             if (iss) iss.status = "resolved";
-            report(`🎗️ OPENING CEREMONY: ${e.name}`, `${e.name} has opened. Hundreds of residents attended; local officials are praising your work.`, ch);
+            report(`🎗️ ${e.name} is finished`, `${e.name}, which you won from the Senate, is ready to open.`, ch);
+            pushScene("opening", { name: e.name, district: e.district, g: {} });
             log(`💰 Delivered ${e.name} (${e.cost}M credits) to ${world().name}.`, "legacy");
         }
     });
@@ -318,10 +318,14 @@ function tickAppropriations() {
         p.monthsLeft--;
         if (p.monthsLeft <= 0) {
             Object.entries(p.fx).forEach(([k, v]) => { if (k === "fortify") G.fortify += v; else G.base[k] += v; });
-            p.followAt = monthsNow() + ri(4, 10);
+            p.followAt = p.infra ? null : monthsNow() + ri(4, 10);
+            if (p.infra) infraComplete(p);
+            if (p.sectorAsset) sectorAssetComplete(p);
             const iss = (G.issues || []).find(x => x.uid === p.key);
             if (iss) iss.status = "resolved";
-            report(`🏗️ Completed: ${p.name}`, p.privateOwned ? "Built and owned by private investors." : "Opened by your government.", applyEffects({ trust: 2, g: p.g || {} }));
+            report(`🏗️ Completed: ${p.name}`, p.privateOwned ? "Built and owned by private investors." : "Opened by your government.", applyEffects({ trust: 2 }));
+            if (governing()) pushScene("opening", { name: p.name, district: p.district, g: p.g || {} });
+            else applyEffects({ g: p.g || {} });
             log(`🏗️ Completed ${p.name}.`, "legacy");
         }
     });
@@ -337,42 +341,10 @@ function tickAppropriations() {
 
 // ── Governor: projects and financing ──────────────────────────────
 
-const PROJECTS = [
-    { key: "hospital", name: "Planetary Hospital",        cost: 2.4, months: 8,  fx: { healthcare: 8 }, g: { elders: 5, veterans: 3 } },
-    { key: "housing",  name: "New Housing District",      cost: 1.8, months: 10, fx: { housing: 8 }, g: { youth: 4, urban: 4 } },
-    { key: "port",     name: "Spaceport Modernisation",   cost: 3.0, months: 12, fx: { infrastructure: 8, employment: 3 }, g: { business: 5 } },
-    { key: "univ",     name: "Planetary University",      cost: 1.5, months: 12, fx: { education: 8 }, g: { students: 6 } },
-    { key: "grid",     name: "Power & Water Grid",        cost: 2.0, months: 10, fx: { infrastructure: 6, healthcare: 2 }, g: { rural: 5 } },
-    { key: "academy",  name: "Security Academy",          cost: 1.0, months: 6,  fx: { crime: -6 }, g: { elders: 3 } },
-    { key: "industry", name: "Industrial Park",           cost: 2.2, months: 10, fx: { employment: 7, environment: -3 }, g: { workers: 5, environmentalists: -3 } },
-    { key: "reserve",  name: "Conservation Reserve",      cost: 0.6, months: 4,  fx: { environment: 7 }, g: { environmentalists: 5, traditional: 3 } },
-    { key: "shield",   name: "Planetary Defence Works",   cost: 2.5, months: 12, fx: { fortify: 15 }, g: { military: 5, elders: 2 } }
-];
-
-function financeProject(key, how, extra) {
-    const p = PROJECTS.find(x => x.key === key);
-    if (G.projects.some(x => x.key === key && x.monthsLeft > 0)) return toast("Already under construction", `${p.name} is already being built.`);
-    if (!spendAP(4)) return;
-    const proj = { key, name: p.name, fx: p.fx, g: p.g, monthsLeft: p.months };
-    let msg = "";
-    switch (how) {
-        case "cash": G.treasury -= p.cost; msg = "Paid from the treasury."; break;
-        case "taxes": G.policies.income_tax.level = clamp(G.policies.income_tax.level + 0.2, 0, 1); G.treasury -= p.cost; applyEffects({ g: { workers: -3, elites: -4, business: -2 } }); msg = "You raise income tax to pay for it."; break;
-        case "borrow": G.treasury -= p.cost; applyEffects({ g: { business: -1 }, f: { corporatists: -2 } }); msg = "Borrowed. The interest will follow you."; break;
-        case "cut": { const k = extra; if (!G.policies[k]) return; G.policies[k].level = clamp(G.policies[k].level - 0.3, 0, 1); G.treasury -= p.cost * 0.4; const e = { g: {} }; Object.entries(POLICIES[k].g).forEach(([gk, v]) => { if (v > 0) e.g[gk] = -v * 0.5; }); applyEffects(e); msg = `Paid for by cutting ${POLICIES[k].name}.`; break; }
-        case "republic": { const sen = worldSenator(G.worldKey); const ok = chance(25 + (sen ? sen.rel / 2 : 0) + G.influence / 3 + (G.allegiance === "republic" ? 10 : -30)); if (ok) { proj.monthsLeft += 3; msg = "Republic funding approved after a three-month wait."; G.record.appropriations += Math.round(p.cost * 1000); } else { G.ap += 4; return report("Republic funding refused", "The Senate won't pay for it. Find another way."); } break; }
-        case "private": proj.privateOwned = true; applyEffects({ p: { inequality: 2 }, g: { business: 4, workers: -2 }, f: { corporatists: 5, reformers: -3 } }); msg = "Private investors build it — and own it."; break;
-    }
-    G.projects.push(proj);
-    report(`Project launched: ${p.name}`, msg);
-    render();
-}
-
-
 // ── Executive powers ──────────────────────────────────────────────
 
 function execAction(type, arg) {
-    const costs = { emergency: 5, agencies: 3, regulations: 3, resources: 3, cabinet: 3, agencyhead: 3, merge: 4, security: 3, preparedness: 3, incentives: 3, mining: 3, enterprise: 4, trade: 4 };
+    const costs = { emergency: 5, resources: 3, security: 3 };
     if (!spendAP(costs[type] || 3)) return;
     let ch = [];
     switch (type) {
@@ -381,27 +353,11 @@ function execAction(type, arg) {
             ch = applyEffects({ i: { courts: -5, legislature: -4 }, f: { militarists: 3, reformers: -4 } });
             G.liberties = clamp(G.liberties + 10);
             report("State of emergency declared", "Wartime measures are unlocked and decrees bypass the courts for twelve months. Citizens will ask when it ends.", ch); break;
-        case "agencies": ch = applyEffects({ i: { civil: 8 } }); report("Agencies directed", "You give the ministries clear orders and deadlines.", ch); break;
-        case "regulations": ch = applyEffects({ p: { inequality: -2 }, g: { workers: 3, business: -3 } }); report("Temporary regulations", "Emergency price and safety rules take effect.", ch); break;
         case "resources": ch = applyEffects({ treasury: -2, unrest: -8 }); ["food", "medicine", "fuel"].forEach(k => { G.supplies[k] = clamp(G.supplies[k] + 20); }); report("Emergency resources allocated", "Reserves are released to the districts that need them most.", ch); break;
-        case "cabinet": { const n = npc(arg); G.cabinet[extraSeat()] = n.id; changeRel(n, 12, "Appointed to your cabinet."); ch = applyEffects({ i: { civil: 3 }, f: { [n.faction]: 4 } }); report("Cabinet appointment", `${n.name} joins your cabinet.`, ch); break; }
-        case "agencyhead": ch = applyEffects({ i: { civil: 6 }, heat: chance(30) ? 4 : 0 }); report("Agency head replaced", "A loyalist takes over a troublesome agency.", ch); break;
-        case "merge": ch = applyEffects({ treasury: 1.5, i: { civil: -5 } }); report("Agencies merged", "Savings now, confusion for a while.", ch); break;
         case "security": ch = applyEffects({ p: { crime: -4 }, g: { youth: -2, elders: 2 } }); G.liberties = clamp(G.liberties + 5); report("Security deployed", "Planetary security is on the streets.", ch); break;
-        case "preparedness": G.fortify += 5; ch = applyEffects({ treasury: -1.5, g: { military: 2 } }); report("Defence preparedness", `Defence strength is now ${defenseStrength()}.`, ch); break;
-        case "incentives": ch = applyEffects({ p: { employment: 3, inequality: 2 }, treasury: -1, g: { business: 4 }, f: { corporatists: 3 } }); report("Corporate incentives", "Tax breaks lure new investment.", ch); break;
-        case "mining": ch = applyEffects({ p: { environment: 4, employment: -2 }, g: { environmentalists: 4, business: -3 } }); report("Mining regulated", "Tighter rules on the extraction companies.", ch); break;
-        case "enterprise": ch = applyEffects({ p: { employment: 3 }, treasury: -2, g: { workers: 3, business: -3 }, f: { reformers: 3, corporatists: -3 } }); report("Public enterprise", "A state-owned company takes over a failing industry.", ch); break;
-        case "trade": { const k = arg; ch = applyEffects({ world: { key: k, prosperity: 4 }, gal: { trade: 1 }, p: { employment: 1 } }); const s = worldSenator(k); if (s) changeRel(s, 6, `Signed a trade agreement with ${world().name}.`); G.record.agreements.push(`${world().name}–${worldName(k)} Trade Agreement (${eraYear(currentBBY())})`); report("Trade agreement", `${world().name} and ${worldName(k)} sign a trade agreement.`, ch); break; }
     }
     render();
 }
-
-function extraSeat() {
-    const seats = ["Finance", "Security", "Health", "Infrastructure"];
-    return seats.find(s => !G.cabinet[s]) || pick(seats);
-}
-
 
 // ── The royal court ───────────────────────────────────────────────
 

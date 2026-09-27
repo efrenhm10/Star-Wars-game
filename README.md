@@ -175,6 +175,43 @@ stops, the economy and the war.
   politicians, major galactic legislation tied to the timeline (sanctions,
   the Loyalty Act, clone army funding, emergency powers) and your own.
 
+## The Government desk
+
+The **Agenda** holds problems and requests coming to you. The **Government**
+desk is what you run. The money lives in **Policy → Budget**.
+
+- **Your cabinet** arrives with you: a finance minister, security chief,
+  health minister, infrastructure minister and economic development
+  minister. Each has a skill rating, a faction and live advice about your
+  situation, and can be replaced.
+- **Planetary infrastructure with endpoints**: medcenters, housing,
+  schools and security stations (have / need, based on population), plus
+  spaceport, grid, transit and defence works (% built out). You build in
+  chunks through the capital program, and are asked where each build ranks
+  in the queue.
+- **Economic development.** Eleven industries, each with:
+  - a **natural fit** for your world's climate and geography (no farms on
+    Mustafar, Tibanna refining on Bespin, tourism at Canto Bight);
+  - an **industry strength** meter;
+  - a **"conditions to flourish"** checklist (education, healthcare,
+    infrastructure, spaceport) and **public investments** such as a
+    research centre and medical school for biotech, or irrigation, an
+    agricultural college and a food hub for agriculture.
+- **Courting companies.** Named firms (Kuat Drive Yards, Czerka, SoroSuub,
+  the Banking Clan). You set the tax holiday, capital grant, local-hiring
+  requirement, site infrastructure and labour waivers, and see the local
+  jobs, cost per job, payback period and odds before you offer. You can
+  **fly to their headquarters** for a three-round conversation with a CEO
+  who has a personality and hidden priorities, and who tells you what they
+  need.
+- **Debt.** Bonds carry real balances, interest and debt service, with a
+  credit rating. Multi-year laws and deals are paid year by year.
+- **Coruscant.** Republic matching grants must be won: you testify, lobby
+  your senator and meet the Chancellor. A world in severe distress can ask
+  for a bailout, which comes with oversight.
+- **Opening ceremonies.** When a project finishes, you speak, send a
+  minister, or skip it.
+
 ## Governing: laws, budgets, packages, trade
 
 - **Laws before sliders.** Over 90 laws cover transport, law and order,
@@ -342,6 +379,7 @@ before committees, refusing him and speaking out all raise your **danger**
 | `js/dilemmas.js` | Disasters, windfalls, pressure groups, multi-year investment packages |
 | `js/trade.js` | Goods, trading partners, agreements, disputes |
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
+| `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |
 | `js/ui.js`, `js/ui_world.js`, `js/ui_issues.js`, `js/main.js` | Interface and input |

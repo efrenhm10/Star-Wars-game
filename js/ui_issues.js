@@ -95,7 +95,7 @@ function viewIssues() {
     const open = openIssues();
     const k = G.office.kind;
     const tour = k === "senator" ? tact("hometour", "🚀 Tour the homeworld to find needs", 3, "Meet constituents; see problems with your own eyes.") : "";
-    return `<div class="era-banner"><b>THE AGENDA</b> · Politics comes to you. Solve one problem and someone else may feel ignored.</div>
+    return `<div class="era-banner"><b>THE AGENDA</b> · Problems and requests coming <i>to</i> you. Decide how to handle each one — ${governing() ? "put it in the capital program, legislate, or delegate" : "fund it, legislate, or champion it"}. What you <i>run</i> is on your ${esc(roleSchema().label)} desk.</div>
         <div class="cols"><div class="col-main">
             ${panel(`📬 Issues & constituent requests (${open.length})`, `${tour}${open.map(i => issueCard(i)).join("") || '<p class="muted">No open issues. Campaign, tour, or wait — the galaxy will send you some.</p>'}`)}
             ${builderPanel()}

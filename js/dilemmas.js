@@ -213,7 +213,8 @@ function compilePackage(spec) {
     const pppSave = total * f.ppp / 100 * 0.15;
     total = Math.round((total - pppSave) * 10) / 10;
     const annual = total / spec.years;
-    const monthlyCost = (annual * (f.general + f.bonds * 1.4 + f.ppp) / 100) / 12;
+    const monthlyCost = (annual * (f.general + f.ppp) / 100) / 12;
+    const bondDebtService = total * f.bonds / 100 * 1.35 / (spec.years * 12);
     const levyPerMonth = annual * f.levy / 100 / 12;
     const st = { reformers: 1, centralists: 1, corporatists: 0, federalists: 0, militarists: 0, independence: 0, traditionalists: 0 };
     if (f.bonds >= 50) { st.corporatists -= 2; st.traditionalists -= 1; }
@@ -229,7 +230,7 @@ function compilePackage(spec) {
     comps.forEach(c => Object.entries(c.g).forEach(([k, v]) => { g[k] = (g[k] || 0) + v; }));
     if (f.levy) { g.business = (g.business || 0) - 2; g.workers = (g.workers || 0) - 1; }
     const fundingText = Object.entries(f).filter(([, v]) => v).map(([k, v]) => `${v}% ${PKG_FUNDING[k].name.toLowerCase()}`).join(", ");
-    return { title: `The ${world().name} ${T.name}`, comps, total, annual, monthlyCost, levyPerMonth, cover, stance: st, g, fundingText, years: spec.years };
+    return { title: `The ${world().name} ${T.name}`, comps, total, annual, monthlyCost, bondDebtService, levyPerMonth, cover, stance: st, g, fundingText, years: spec.years };
 }
 
 function submitPackage(spec) {
@@ -286,13 +287,10 @@ function pkgNegotiate(b, how, district) {
 function activatePackage(pkg) {
     Object.assign(pkg, compilePackage(pkg.spec));
     const f = pkg.spec.funding;
-    // The Republic may or may not pay its share.
-    if (f.republic > 0) {
-        const sen = worldSenator(G.worldKey);
-        const ok = chance(25 + (sen ? sen.rel / 2 : 0) + G.influence / 3 + (G.allegiance === "republic" ? 10 : -30));
-        if (ok) { G.record.appropriations += Math.round(pkg.total * f.republic); report("Republic grant approved", `The Republic will pay ${f.republic}% of the package.`); }
-        else { f.bonds += f.republic; f.republic = 0; Object.assign(pkg, compilePackage(pkg.spec)); report("Republic grant refused", "The Senate won't pay. The Republic's share will be borrowed instead."); }
-    }
+    // The Republic's share must be won on Coruscant.
+    if (f.republic > 0) { openRequest("grant", pkg.total * f.republic / 100, pkg.id); report("🏛️ Now win the Republic's share", `The Senate will decide on a ${(pkg.total * f.republic / 100).toFixed(1)}B matching grant in four months. Go to Coruscant and make your case (Government desk).`); }
+    // The bond share is real debt.
+    if (f.bonds > 0) issueBond(pkg.total * f.bonds / 100, pkg.years, `${pkg.title} bonds`, false);
     if (f.levy > 0 && G.policies[pkg.spec.levyTax]) {
         const tax = pkg.spec.levyTax, def = POLICIES[tax];
         G.policies[tax].level = clamp(G.policies[tax].level + pkg.levyPerMonth / -def.cost, 0, 1);
@@ -366,6 +364,7 @@ function packagesView() {
             <div class="bill-preview"><div class="record-title">THE PACKAGE</div><h3 class="bill-title">${esc(t.title)}</h3>
                 <div class="statrow"><span>Total cost</span><b>${t.total.toFixed(1)}B over ${t.years} years</b></div>
                 <div class="statrow"><span>From the budget each year</span><b>${(t.monthlyCost * 12).toFixed(1)}B</b></div>
+                ${t.bondDebtService ? `<div class="statrow"><span>Bond payments each year (≈)</span><b>${(t.bondDebtService * 12).toFixed(1)}B</b></div>` : ""}
                 <div class="statrow"><span>Funding covered</span><b class="${t.cover === 100 ? "c-for" : "c-against"}">${t.cover}%</b></div>
                 <h4>How the legislature will see it</h4><div class="stances">${Object.entries(t.stance).filter(([, v]) => v).map(([f, v]) => `<span class="stance s${v}">${FACTIONS[f].icon} ${FACTIONS[f].name}: ${LEAN_WORDS[v]}</span>`).join("")}</div>
                 <div class="row"><button class="primary" data-act="pkgsubmit" ${G.ap < 6 || t.cover !== 100 ? "disabled" : ""}>${rulesByDecree() ? "Decree it · 6" : "Send to the legislature · 6"}</button><button class="secondary" data-act="pkgcancel">Discard</button></div></div></div>`);

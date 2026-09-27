@@ -460,7 +460,12 @@ function enactBill(b) {
     Object.entries(f.p || {}).forEach(([k, v]) => { e.p[k] = v * m; });
     Object.entries(f.gal || {}).forEach(([k, v]) => { e.gal[k] = v * m; });
     if (f.armsJobs && world().traits.includes("arms")) e.p.employment = (e.p.employment || 0) + f.armsJobs;
-    if (f.treasury && b.arena === "local") e.treasury = f.treasury;
+    if (f.treasury && b.arena === "local") {
+        // Multi-year costs are paid year by year, not all at once.
+        const yrs = f.duration || (f.program ? f.program.years : 0);
+        if (f.treasury < 0 && yrs > 1) addStream(`Program: ${b.title}`, f.treasury / (Math.min(yrs, 20) * 12), Math.min(yrs, 20) * 12);
+        else e.treasury = f.treasury;
+    }
     if (f.indep) e.indep = f.indep * m;
     if (f.trustOnPass) e.trust = f.trustOnPass;
     if (f.heatOnPass && G.secrets.length) e.heat = f.heatOnPass;

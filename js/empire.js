@@ -474,9 +474,9 @@ Object.assign(SCENES, {
         ]
     }),
 
-    emp_colleague: () => {
-        const who = randomName(G.worldKey);
-        fallen(who, "researcher, found dead in a “speeder accident”");
+    emp_colleague: ctx => {
+        if (!ctx.who) { ctx.who = randomName(G.worldKey); fallen(ctx.who, "researcher, found dead in a “speeder accident”"); }
+        const who = ctx.who;
         return { tag: "A MESSAGE", title: "An accident",
             body: `<p><b>${esc(who)}</b>, the researcher who had been helping you, is found dead. The official report says their speeder lost power over the industrial levels.</p><p>The speeder was three months old. They had called you the night before: <i>“I found something. Not over comms.”</i></p>`,
             choices: [
@@ -559,8 +559,9 @@ Object.assign(SCENES, {
         ]
     }),
 
-    emp_reprisal: () => {
-        const n = pick([10, 20, 30]);
+    emp_reprisal: ctx => {
+        if (!ctx.n) ctx.n = pick([10, 20, 30]);
+        const n = ctx.n;
         return { tag: "REPRISAL", title: "The price of every attack",
             body: `<p>The garrison commander has ${n} people from the district shot in the square. Posters on every wall promise ${n} more for every attack.</p><p>Some of them were your neighbours.</p>`,
             choices: [
@@ -602,11 +603,15 @@ Object.assign(SCENES, {
     }),
 
     emp_betrayal: ctx => {
-        const c = G.ug.comrades.find(x => x.name === ctx.name);
-        if (c) c.status = "left";
-        G.ug.mole = null;
-        G.ug.exposure = clamp(G.ug.exposure + 35);
-        const a = loseComrade("captured"), b = loseComrade("dead", `killed in the raids after ${ctx.name}'s betrayal`);
+        if (!ctx.applied) {
+            const c = G.ug.comrades.find(x => x.name === ctx.name);
+            if (c) c.status = "left";
+            G.ug.mole = null;
+            G.ug.exposure = clamp(G.ug.exposure + 35);
+            const a0 = loseComrade("captured"), b0 = loseComrade("dead", `killed in the raids after ${ctx.name}'s betrayal`);
+            ctx.applied = { a: a0 && a0.name, b: b0 && b0.name };
+        }
+        const a = ctx.applied.a && { name: ctx.applied.a }, b = ctx.applied.b && { name: ctx.applied.b };
         return { tag: "BETRAYED", title: `${ctx.name} sold you`,
             body: `<p>${esc(ctx.name)} was an ISB informant all along. Tonight three safehouses are hit at once.${a ? ` ${esc(a.name)} is taken.` : ""}${b ? ` ${esc(b.name)} is killed.` : ""}</p>`,
             choices: [

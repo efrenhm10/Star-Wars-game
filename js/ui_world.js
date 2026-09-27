@@ -153,8 +153,8 @@ function viewPowers() {
     if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
-    else if (L === "court") out += courtDesk() + (canDecree() || traditionalGovernment() ? executiveDesk() : "") + rolePowers();
-    else if (L === "executive" || L === "command") out += executiveDesk() + rolePowers();
+    else if (L === "court") out += courtDesk() + (canDecree() || traditionalGovernment() ? govDesk() : "") + rolePowers();
+    else if (L === "executive" || L === "command") out += govDesk() + rolePowers();
     else if (L === "city") out += cityDesk() + rolePowers();
     else if (L === "underground") out += ugDesk();
     else out += rolePowers();
@@ -195,38 +195,6 @@ function senatorDesk() {
         ${panel("🤝 Build a coalition", `${bloc("core", "Meet the Core Worlds delegation")}${bloc("mid", "Negotiate with the Mid Rim caucus")}${bloc("outer", "Negotiate with the Outer Rim bloc")}${bloc("loyalist", "Meet the Loyalist Committee", G.hist.loyalist_committee)}${bloc("sep", "Meet quietly with Separatist sympathisers", ["republic", "crisis"].includes(G.era))}`)}
         ${panel("🌌 Foreign & galactic affairs", `${tact("sanctions", "Support sanctions", 3, "", 'data-k="support"')}${tact("sanctions", "Oppose sanctions", 3, "", 'data-k="oppose"')}${tact("treaty", "Ratify a treaty", 4)}
             <select id="interventionSel">${worldOptions()}</select>${tact("intervention", "Request diplomatic intervention", 3)}`)}
-    </div></div>`;
-}
-
-function executiveDesk() {
-    const b = budget();
-    const projects = PROJECTS.map(p => {
-        const building = G.projects.find(x => x.key === p.key && x.monthsLeft > 0);
-        const can = G.treasury >= p.cost;
-        return `<div class="project"><div class="statrow"><b>${esc(p.name)}</b><span class="small">${p.months} months</span></div>
-            <div class="hints">${effectHints({ p: p.fx.fortify ? {} : p.fx, g: p.g })}${p.fx.fortify ? '<span class="hint up">🛡️ Defence +15</span>' : ""}</div>
-            <p class="small">Projected cost: <b>${p.cost.toFixed(1)}B</b> · Available: <b class="${can ? "c-for" : "c-against"}">${G.treasury.toFixed(1)}B</b></p>
-            ${building ? `<p class="small c-und">Under construction — ${building.monthsLeft} months left.</p>` : `<div class="row fin">
-                ${can ? `<button class="mini" data-act="project" data-k="${p.key}" data-h="cash">Pay from treasury</button>` : ""}
-                <button class="mini" data-act="project" data-k="${p.key}" data-h="taxes">Raise taxes</button>
-                <button class="mini" data-act="project" data-k="${p.key}" data-h="borrow">Borrow</button>
-                <button class="mini" data-act="project" data-k="${p.key}" data-h="cut">Cut a program</button>
-                <button class="mini" data-act="project" data-k="${p.key}" data-h="republic">Request Republic funding</button>
-                <button class="mini" data-act="project" data-k="${p.key}" data-h="private">Private investment</button></div>`}</div>`;
-    }).join("");
-    const cabinetSeats = ["Finance", "Security", "Health", "Infrastructure"].map(s => `<div class="statrow"><span>${s}</span><b>${G.cabinet[s] && npc(G.cabinet[s]) ? esc(npc(G.cabinet[s]).name) : '<span class="muted">vacant</span>'}</b></div>`).join("");
-    const locals = livingNpcs().filter(n => n.arena === "local" || n.world === G.worldKey);
-    return `<div class="cols"><div class="col-main">
-        ${panel("🏗️ Budget & projects", `<div class="statrow"><span>Treasury</span><b>${G.treasury.toFixed(1)}B</b></div><div class="statrow"><span>Monthly balance</span><b class="${b.net >= 0 ? "c-for" : "c-against"}">${fmt(b.net)}B</b></div>
-            <p class="muted small">Every project costs 4 capital to launch. If the money isn't there, you must choose how to find it. Cutting a program uses the program selected here:</p>
-            <select id="cutSel">${Object.entries(G.policies).filter(([, p]) => p.level > 0.1).map(([k]) => `<option value="${k}">${POLICIES[k].name}</option>`).join("")}</select>
-            <div class="grid2">${projects}</div>`)}
-    </div><div class="col-side">
-        ${panel("📜 Executive orders", `${tact("exec", "Declare a state of emergency", 5, "Unlocks wartime measures for 12 months.", 'data-t="emergency"')}${tact("exec", "Direct government agencies", 3, "", 'data-t="agencies"')}${tact("exec", "Establish temporary regulations", 3, "", 'data-t="regulations"')}${tact("exec", "Allocate emergency resources", 3, "2B from the treasury.", 'data-t="resources"')}`)}
-        ${panel("🗂️ Administration", `${cabinetSeats}<select id="cabSel">${npcOptions(locals)}</select>${tact("exec", "Appoint to cabinet", 3, "", 'data-t="cabinet" data-sel="cabSel"')}${tact("exec", "Replace an agency head", 3, "", 'data-t="agencyhead"')}${tact("exec", "Merge agencies", 4, "Saves money; confuses everyone.", 'data-t="merge"')}`)}
-        ${panel("🚨 Public safety", `${tact("exec", "Deploy planetary security", 3, "", 'data-t="security"')}${tact("exec", "Increase emergency preparedness", 3, "", 'data-t="preparedness"')}${(G.siege || G.occupied) ? tact("petition", "Request Republic assistance", 4) : ""}`)}
-        ${panel("📈 Economic development", `${tact("exec", "Offer corporate incentives", 3, "", 'data-t="incentives"')}${tact("exec", "Regulate mining", 3, "", 'data-t="mining"')}${tact("exec", "Establish a public enterprise", 4, "", 'data-t="enterprise"')}<button class="secondary" data-act="gotrade">🚀 Trade agreements and partners →</button>`)}
-        ${panel("", `<button class="secondary" data-act="view" data-v="government">🕸️ Open the policy web</button>`)}
     </div></div>`;
 }
 

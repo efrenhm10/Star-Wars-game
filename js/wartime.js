@@ -237,8 +237,9 @@ Object.assign(SCENES, {
             { label: "Hand over a cleaned list", go: () => { G.isb = (G.isb || 0) + 6; if (chance(30)) { G.moffTrust = clamp((G.moffTrust || 50) - 12); report("They noticed", "The ISB compares your list to its own. It is noticeably shorter."); } } },
             { label: "“The records were lost in a fire”", go: () => { G.isb = (G.isb || 0) + 12; G.moffTrust = clamp((G.moffTrust || 50) - 10); applyEffects({ rep: 4 }); } }
         ] }),
-    imp_decree: () => {
-        const k = pick(["id_chits", "curfews", "holocams", "patriotic_broadcasts", "loyalty_oaths", "species_registry"].filter(x => POLICIES[x] && policyAvailable(x) && G.policies[x].level < 0.5)) || "holocams";
+    imp_decree: ctx => {
+        if (!ctx.k) ctx.k = pick(["id_chits", "curfews", "holocams", "patriotic_broadcasts", "loyalty_oaths", "species_registry"].filter(x => POLICIES[x] && policyAvailable(x) && G.policies[x].level < 0.5)) || "holocams";
+        const k = ctx.k;
         return { tag: "IMPERIAL DECREE", title: `${moffName()} imposes ${POLICIES[k].name}`,
             body: `<p>By order of the Moff, ${esc(world().name)} will enact <b>${esc(POLICIES[k].name)}</b> at once. Your legislature is not consulted.</p>`,
             choices: [

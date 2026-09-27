@@ -196,11 +196,16 @@ function fundMult(cat) {
 }
 function fundFactor(cat) { return 1 + (fundMult(cat) - 1) * 0.6; }
 
+// Everything outside the departments, per month: revenue streams, multi-year programs
+// written into law, the capital program, packages, and bond payments.
 function budgetExtras() {
-    const streams = (G.streams || []).reduce((s, x) => s + x.perMonth, 0);
+    const live = (G.streams || []).filter(x => !(x.wait > 0));
+    const streams = live.filter(x => x.perMonth > 0).reduce((s, x) => s + x.perMonth, 0);
+    const programs = live.filter(x => x.perMonth < 0).reduce((s, x) => s - x.perMonth, 0);
     const cip = G.cip ? G.cip.committed / 12 : 0;
     const pk = (G.packages || []).filter(p => p.status === "active").reduce((s, p) => s + p.monthly, 0);
-    return { income: streams, spend: cip + pk, cip, packages: pk, streams };
+    const debt = typeof debtService === "function" ? debtService() : 0;
+    return { income: streams, spend: cip + pk + programs + debt, cip, packages: pk, streams, programs, debt };
 }
 
 function budgetEditable() { return governing() && ["drafting", "rejected"].includes(G.pbudget.status); }
@@ -236,12 +241,14 @@ function projectBudget(d = G.pbudget.draft) {
         spend += c * m;
     });
     const ex = budgetExtras();
-    income += ex.streams * 12;
+    income += ex.streams * 12 + (typeof tradeIncome === "function" ? tradeIncome() * 12 : 0);
     const cip = d ? d.cip : G.pbudget.cip;
     const pk = ex.packages * 12;
+    const programs = ex.programs * 12;
+    const debt = ex.debt * 12;
     const interest = G.treasury < 0 ? -G.treasury * 0.012 * 12 : 0;
-    const total = spend + cip + pk + interest;
-    return { income, lines, spend, cip, pk, interest, total, net: income - total };
+    const total = spend + cip + pk + programs + debt + interest;
+    return { income, lines, spend, cip, pk, programs, debt, interest, total, net: income - total };
 }
 
 function budgetStance(d) {
@@ -339,7 +346,10 @@ function addToCip(item) {
     initLawbook();
     if (G.cip.queue.some(q => q.key === item.key && q.status !== "done")) return toast("Already in the program", `${item.name} is already in the capital program.`);
     G.cip.queue.push({ ...item, status: "queued", added: monthsNow() });
-    fundCip();
+    // With other projects waiting, the player decides where the new one ranks.
+    if (G.cip.queue.some(q => q.status === "queued" && q.key !== item.key) && governing()) frontScene("cip_priority", { key: item.key });
+    else fundCip();
+    render();
 }
 
 function fundCip() {
@@ -349,7 +359,7 @@ function fundCip() {
         if (q.cost <= c.remaining + 0.001) {
             c.remaining -= q.cost; c.committed += q.cost;
             q.status = "building";
-            G.projects.push({ key: q.key, name: q.name, fx: q.fx, g: q.g, monthsLeft: q.months || 4 + Math.round(q.cost * 2), cost: Math.round(q.cost * 100), cat: q.cat, district: q.district, cip: true });
+            G.projects.push({ key: q.key, name: q.name, fx: q.fx, g: q.g, monthsLeft: q.months || 4 + Math.round(q.cost * 2), cost: Math.round(q.cost * 100), cat: q.cat, district: q.district, cip: true, infra: q.infra, sectorAsset: q.sectorAsset });
             report(`🏗️ Capital program: ${q.name}`, `Funded from this year's capital budget (${q.cost.toFixed(1)}B). Construction begins.`);
         }
     });
@@ -430,6 +440,15 @@ function lawbookView() {
         }).join("")}</div>`;
 }
 
+function debtPanel() {
+    initDebt();
+    const gov = governing();
+    return panel("🏦 Debt", `${statRow("Bonds outstanding", `${G.bonds.reduce((s, b) => s + b.balance, 0).toFixed(1)}B`)}${statRow("Overdraft (negative treasury)", `${Math.max(0, -G.treasury).toFixed(1)}B`)}
+        ${statRow("Debt service", `${(debtService() * 12).toFixed(1)}B/yr`)}${G.treasury < 0 ? statRow("Overdraft interest", `${(-G.treasury * 0.012 * 12).toFixed(1)}B/yr`) : ""}${statRow("Credit rating", `${creditRating()} · new bonds at ${(bondRate() * 100).toFixed(1)}%`)}
+        ${G.bonds.map(b => `<p class="small muted">${esc(b.name)}: ${b.balance.toFixed(1)}B left at ${(b.rate * 100).toFixed(1)}%, ${Math.ceil(b.left / 12)} yrs</p>`).join("")}
+        ${gov ? `<p class="small">Sell ten-year bonds (cheaper than an overdraft):</p><div class="row">${[2, 5, 10].map(v => `<button class="mini" data-act="sellbonds" data-v="${v}" ${G.ap < 3 ? "disabled" : ""}>${v}B · 3</button>`).join("")}</div>` : ""}`);
+}
+
 function budgetView() {
     initLawbook();
     const pb = G.pbudget;
@@ -439,7 +458,8 @@ function budgetView() {
     const d = editable ? pb.draft : { cats: Object.fromEntries(SPEND_CATS.map(c => [c, fundMult(c)])), cip: pb.cip, taxes: Object.fromEntries(Object.keys(POLICIES).filter(k => POLICIES[k].cat === "tax" && G.policies[k].level > 0).map(k => [k, G.policies[k].level])) };
     const pr = projectBudget(d);
     const statusText = { adopted: "The budget is in force for this fiscal year.", drafting: "Budget season: draft next year's budget and submit it before Month 12.", submitted: "Your budget is before the legislature.", passed: "Next year's budget has passed. It takes effect in January.", rejected: "The legislature rejected your budget. Revise and resubmit.", continuing: "No budget passed: the government is running under a continuing resolution." }[pb.status];
-    const catRows = SPEND_CATS.filter(c => pr.lines[c] || d.cats[c] !== 1).map(c => `<tr><td>${POLICY_CATS[c].name}</td><td class="num">${(pr.lines[c] || 0).toFixed(1)}B</td><td>${editable ? `<select data-pb="cat:${c}">${[0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3].map(v => `<option value="${v}" ${Math.abs((d.cats[c] || 1) - v) < 0.01 ? "selected" : ""}>${Math.round(v * 100)}%</option>`).join("")}</select>` : `${Math.round((d.cats[c] || 1) * 100)}%`}</td></tr>`).join("");
+    const catRows = SPEND_CATS.filter(c => pr.lines[c] || d.cats[c] !== 1).map(c => `<tr><td>${POLICY_CATS[c].name}</td><td class="num">${(pr.lines[c] || 0).toFixed(1)}B</td><td>${editable ? `<span class="stepper"><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="-0.1" ${(d.cats[c] || 1) <= 0.71 ? "disabled" : ""}>−</button><b>${Math.round((d.cats[c] || 1) * 100)}%</b><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="0.1" ${(d.cats[c] || 1) >= 1.29 ? "disabled" : ""}>+</button></span>` : `${Math.round((d.cats[c] || 1) * 100)}%`}</td></tr>
+        <tr class="detail"><td colspan="3"><details><summary class="small muted">What's in it</summary>${Object.entries(POLICIES).filter(([k, def]) => def.cat === c && G.policies[k].level > 0 && def.cost > 0).map(([k, def]) => `<div class="statrow small"><span>${def.icon} ${esc(def.name)} (${levelWord(G.policies[k].level)})</span><b>${(def.cost * G.policies[k].level * 12 * (d.cats[c] || 1)).toFixed(1)}B</b></div>`).join("")}</details></td></tr>`).join("");
     const taxRows = Object.entries(d.taxes).map(([k, lv]) => `<tr><td>${POLICIES[k].icon} ${esc(POLICIES[k].name)}</td><td class="num">${(-POLICIES[k].cost * lv * 12).toFixed(1)}B</td><td>${editable ? `<input type="range" min="5" max="100" step="5" value="${Math.round(lv * 100)}" data-pb="tax:${k}"> ${Math.round(lv * 100)}%` : `${Math.round(lv * 100)}%`}</td></tr>`).join("");
     const cipRows = G.cip.queue.map(q => q).filter(q => q.status !== "done");
     const waiting = G.cip.queue.filter(q => q.status === "queued");
@@ -448,8 +468,8 @@ function budgetView() {
         ${panel("💰 Operating budget", `<table class="results"><tr><th>Department</th><th>Per year</th><th>Funding</th></tr>${catRows}</table>
             <p class="muted small">Funding below 100% saves money but weakens every law in that department; above 100% strengthens them.</p>
             <h4>Revenue</h4><table class="results"><tr><th>Tax</th><th>Per year</th><th>Rate</th></tr>${taxRows || '<tr><td colspan="3" class="muted">No taxes are law.</td></tr>'}</table>
-            <h4>Capital program</h4>${editable ? `<select data-pb="cip">${[0, 1.5, 3, 5, 8, 12].map(v => `<option value="${v}" ${d.cip === v ? "selected" : ""}>${v}B for capital projects</option>`).join("")}</select>` : `<p>${pb.cip}B this year · ${G.cip.remaining.toFixed(1)}B uncommitted${G.cip.frozen ? " · frozen" : ""}</p>`}
-            <div class="bill-preview"><div class="statrow"><span>Revenue</span><b>${pr.income.toFixed(1)}B</b></div><div class="statrow"><span>Operating spending</span><b>${pr.spend.toFixed(1)}B</b></div><div class="statrow"><span>Capital program</span><b>${pr.cip.toFixed(1)}B</b></div>${pr.pk ? `<div class="statrow"><span>Investment packages</span><b>${pr.pk.toFixed(1)}B</b></div>` : ""}${pr.interest ? `<div class="statrow"><span>Debt interest</span><b>${pr.interest.toFixed(1)}B</b></div>` : ""}<div class="statrow"><span>${pr.net >= 0 ? "Surplus" : "Deficit"}</span><b class="${pr.net >= 0 ? "c-for" : "c-against"}">${Math.abs(pr.net).toFixed(1)}B</b></div><div class="statrow"><span>Treasury</span><b>${G.treasury.toFixed(1)}B</b></div></div>
+            <h4>Capital program</h4>${editable ? `<div class="seg small-seg">${[0, 1.5, 3, 5, 8, 12].map(v => `<button class="${d.cip === v ? "on" : ""}" data-act="pbset" data-f="cip" data-v="${v}">${v}B</button>`).join("")}</div>` : `<p>${pb.cip}B this year · ${G.cip.remaining.toFixed(1)}B uncommitted${G.cip.frozen ? " · frozen" : ""}</p>`}
+            <div class="bill-preview"><div class="statrow"><span>Revenue</span><b>${pr.income.toFixed(1)}B</b></div><div class="statrow"><span>Operating spending</span><b>${pr.spend.toFixed(1)}B</b></div><div class="statrow"><span>Capital program</span><b>${pr.cip.toFixed(1)}B</b></div>${pr.pk ? `<div class="statrow"><span>Investment packages</span><b>${pr.pk.toFixed(1)}B</b></div>` : ""}${pr.programs ? `<div class="statrow"><span>Multi-year programs from laws and deals</span><b>${pr.programs.toFixed(1)}B</b></div>` : ""}${pr.debt ? `<div class="statrow"><span>Debt service (bonds)</span><b>${pr.debt.toFixed(1)}B</b></div>` : ""}${pr.interest ? `<div class="statrow"><span>Debt interest</span><b>${pr.interest.toFixed(1)}B</b></div>` : ""}<div class="statrow"><span>${pr.net >= 0 ? "Surplus" : "Deficit"}</span><b class="${pr.net >= 0 ? "c-for" : "c-against"}">${Math.abs(pr.net).toFixed(1)}B</b></div><div class="statrow"><span>Treasury</span><b>${G.treasury.toFixed(1)}B</b></div></div>
             ${editable ? `<h4>How the legislature will see it</h4><div class="stances">${Object.entries(budgetStance(d)).filter(([, v]) => v).map(([f, v]) => `<span class="stance s${v}">${FACTIONS[f].icon} ${FACTIONS[f].name}: ${LEAN_WORDS[v]}</span>`).join("") || '<span class="muted small">No strong feelings.</span>'}</div>
                 <div class="row"><button class="primary" data-act="submitbudget" ${G.ap < 3 ? "disabled" : ""}>${rulesByDecree() ? "Issue the budget by decree · 2" : "Submit to the legislature · 3"}</button></div>` : ""}
             ${gov && pb.status === "submitted" ? `<button class="secondary" data-act="gobill" data-id="${pb.billId}">Fight for it on the floor →</button>` : ""}
@@ -457,7 +477,8 @@ function budgetView() {
         </div><div class="col-side">
         ${panel("🏗️ Capital Improvement Program", `<p class="small">Projects are funded in priority order from each year's capital budget. Add projects from your Agenda.</p>
             ${cipRows.map(q => `<div class="pipe"><div class="statrow"><b>${esc(q.name)}</b><span class="small">${q.cost.toFixed(1)}B</span></div><p class="small ${q.status === "building" ? "c-for" : "muted"}">${q.status === "building" ? "Funded — under construction" : "Waiting for funding"}${q.district ? ` · ${esc(q.district)}` : ""}</p>${q.status === "queued" && gov ? (() => { const i = waiting.indexOf(q); return `<div class="row"><button class="mini" data-act="cipmove" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""}>▲</button><button class="mini" data-act="cipmove" data-i="${i}" data-d="1" ${i === waiting.length - 1 ? "disabled" : ""}>▼</button><button class="mini" data-act="cipremove" data-i="${i}">Remove</button></div>`; })() : ""}</div>`).join("") || '<p class="muted small">Nothing in the program yet.</p>'}`)}
-        ${(G.streams || []).length ? panel("📈 Revenue streams", G.streams.map(s => `<div class="statrow small"><span>${esc(s.name)}</span><b class="c-for">+${(s.perMonth * 12).toFixed(1)}B/yr · ${Math.ceil(s.left / 12)} yrs</b></div>`).join("")) : ""}
+        ${debtPanel()}
+        ${(G.streams || []).length ? panel("📈 Streams & commitments", G.streams.map(s => `<div class="statrow small"><span>${esc(s.name)}</span><b class="${s.perMonth >= 0 ? "c-for" : "c-against"}">${s.perMonth >= 0 ? "+" : "−"}${Math.abs(s.perMonth * 12).toFixed(1)}B/yr · ${Math.ceil(s.left / 12)} yrs${s.wait > 0 ? " (not yet)" : ""}</b></div>`).join("")) : ""}
         ${pb.history.length ? panel("Budget history", pb.history.map(h => `<p class="small">${esc(h.year)}: ${esc(h.status)} · capital ${h.cip}B</p>`).join("")) : ""}
         </div></div>`;
 }
@@ -477,7 +498,7 @@ function tickLawbook() {
     }
     if (pb.status === "submitted" && !G.bills.some(b => b.id === pb.billId)) { if (pb.status === "submitted") pb.status = "rejected"; }
     tickCip();
-    G.streams.forEach(s => { s.left--; });
+    G.streams.forEach(s => { if (s.wait > 0) s.wait--; else s.left--; });
     G.streams = G.streams.filter(s => s.left > 0);
     // A government run by someone else still has to balance its books.
     if (!governing() && G.month % 6 === 3) npcFiscalPolicy();
