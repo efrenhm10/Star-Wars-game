@@ -99,6 +99,7 @@ function defenseStrength() {
     const w = world();
     const pol = G.policies;
     let d = w.ratings.military * 7 + pol.defence_force.eff * 35 + G.garrison + (G.fortify || 0);
+    Object.entries(POLICIES).forEach(([k, def]) => { if (def.defense && pol[k]) d += def.defense * pol[k].eff; });
     if (pol.conscription) d += pol.conscription.eff * 25 + pol.martial_law.eff * 10;
     if (/Military|Royal|Clan|KDY|Guard/i.test(G.const.militaryControl)) d += 6;
     return Math.round(d);
@@ -140,7 +141,7 @@ function tickWar() {
     // New attacks.
     if (G.war && !G.siege && !G.occupied && G.allegiance !== "hutt") {
         const regionRisk = { core: 0.6, mid: 1.6, outer: 2.6 }[w.region];
-        let p = (G.allegiance === "neutral" ? regionRisk * 0.5 : regionRisk) * attackMultiplier();
+        let p = (G.allegiance === "neutral" ? regionRisk * 0.5 : regionRisk) * attackMultiplier() * 1.5 * (G.quietDeal && monthsNow() < G.quietDeal ? 0.4 : 1);
         if (w.ratings.military >= 4 || w.ratings.industry >= 5) p += 0.8;
         if (chance(p)) {
             const by = G.allegiance === "separatist" ? "Republic" : "Separatist";

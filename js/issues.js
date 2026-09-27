@@ -161,6 +161,14 @@ function districtIssue(d, source) {
 
 // ── The generator ─────────────────────────────────────────────────
 
+// "Hospital" → "Hospital Phase II" → "Hospital Phase III", never "Phase II Phase II".
+function nextPhase(name) {
+    const R = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    const m = name.match(/^(.*) Phase ([IVX]+)$/);
+    const base = m ? m[1] : name, n = m ? R.indexOf(m[2]) + 1 : 1;
+    return `${base} Phase ${R[Math.min(R.length - 1, n)]}`;
+}
+
 function tickIssues() {
     G.issues = G.issues || [];
     // Broken campaign promises — checked before ordinary expiry.
@@ -213,7 +221,7 @@ function tickIssues() {
         e.followAt = null;
         const cat = e.cat || guessCat(e.fx, e.g);
         const c = ISSUE_CATS[cat] || ISSUE_CATS.industry;
-        addIssue(makeIssue(cat, { title: `${e.name}: what next?`, text: pick(c.follow).replace("{name}", e.name), source: "followup", kind: "followup", projName: `${e.name} Phase II`, cost: Math.round((e.cost || 100) * 0.6), district: e.district || (G.districts[0] || {}).name }));
+        addIssue(makeIssue(cat, { title: `${e.name}: what next?`, text: pick(c.follow).replace("{name}", e.name), source: "followup", kind: "followup", projName: nextPhase(e.name), cost: Math.round((e.cost || 100) * 0.6), district: e.district || (G.districts[0] || {}).name }));
     });
 
     tickLaws();
@@ -230,7 +238,7 @@ function issueActions(i) {
         return [["strengthen", "Strengthen regulations", 3], ["investigate", "Investigate", 3], ["amend", "Amend the program", 4], ["cut", "Cut its funding", 2], ["expand", "Expand the program", 4], ["defend", "Defend the existing policy", 0]];
     }
     if (k === "senator") acts.push(["appropriation", `Seek an appropriation (${i.cost}M)`, 4], ["bill", "Draft a bill", 0], ["private", "Pursue a private partnership", 3], ["promise", "Make it a campaign promise", 0], ["committee", "Refer it to committee", 2]);
-    else if (gov || k === "council") acts.push(["project", `Fund a project (${(i.cost / 100).toFixed(1)}B)`, 4], ["bill", "Draft a bill", 0], ["agency", "Direct an agency to act", 3], ["askSenate", "Ask the Senate for funding", 3], ["private", "Pursue a private partnership", 3]);
+    else if (gov || k === "council") acts.push(["cip", `Add to the capital program (${(i.cost / 100).toFixed(1)}B)`, 1], ["project", `Emergency appropriation outside the budget (${(i.cost / 100).toFixed(1)}B)`, 5], ["bill", "Draft a bill", 0], ["agency", "Direct an agency to act", 3], ["askSenate", "Ask the Senate for funding", 3], ["private", "Pursue a private partnership", 3]);
     else if (k === "local") acts.push(["city", "City project", 3], ["petition", "Petition the planetary government", 3], ["promise", "Make it a campaign promise", 0], ["bill", "Draft a local ordinance", 0]);
     else if (k === "chancellor" || k === "minister") acts.push(["agency", "Direct a ministry to act", 3], ["bill", "Draft a bill", 0]);
     else acts.push(["organize", "Champion the cause", 3], ["promise", "Make it a campaign promise", 0]);
@@ -270,6 +278,12 @@ function resolveIssue(uid, act) {
             break;
         case "committee": i.expires += 12; ch = applyEffects({ trust: -1 }); report("Referred to committee", "It will be studied. Critics say it's being buried.", ch); break;
         case "ignore": i.status = "dismissed"; ch = applyEffects({ g: Object.fromEntries(gKeys.map(k => [k, -2])) }); if (d) d.boost -= 1; report("Set aside", `“${i.title}” is not a priority.`, ch); break;
+        case "cip": {
+            addToCip({ key: i.uid, name: i.projName, fx: i.fx, g: i.g, cost: i.cost / 100, cat: i.cat, district: i.district });
+            i.status = "in progress";
+            if (!(G.projects || []).some(p => p.key === i.uid)) report("Added to the capital program", `${i.projName} joins the Capital Improvement Program queue. It will be built when the capital budget reaches it.`);
+            break;
+        }
         case "project": {
             const b = i.cost / 100;
             G.treasury -= b;

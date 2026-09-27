@@ -175,6 +175,61 @@ stops, the economy and the war.
   politicians, major galactic legislation tied to the timeline (sanctions,
   the Loyalty Act, clone army funding, emergency powers) and your own.
 
+## Governing: laws, budgets, packages, trade
+
+- **Laws before sliders.** Over 90 laws cover transport, law and order,
+  public services, taxes, the economy, welfare, security and society: skylane
+  control, repulsorlift rail, security-droid patrols, holocams, identity
+  chits, spice prohibition or legalisation, blaster permits, bacta clinics,
+  med droids, technical and flight academies, vaporators, droid-labour tax,
+  docking duties, shipyard contracts, guild charters, species equality, droid
+  rights, shield generators and more. Under the Empire they include loyalty
+  oaths and species registration.
+  - A governor with a legislature must pass a law before it exists.
+  - The executive may then adjust it ±10% once a year. A bigger change needs
+    an amendment bill, and removing a law needs a repeal bill.
+  - Other legislators propose laws that you can sign or veto.
+  - Absolute rulers decree.
+- **The annual budget.** In Month 10 you draft next year's budget: funding
+  for each department (70–130%, which weakens or strengthens its laws), tax
+  rates and the capital-program amount. It must pass the legislature. If it
+  fails, you govern under a continuing resolution with no new capital
+  projects.
+- **The Capital Improvement Program.** Projects from your Agenda join a
+  prioritised queue, funded in order from each year's capital budget.
+- **Multi-year investment packages** for transport, education, health,
+  housing, energy and water, and defence. You choose the components and the
+  term (5, 10 or 15 years), then the funding mix: bonds, the general fund, a
+  dedicated levy, a Republic matching grant or a public–private partnership.
+  In the legislature you negotiate with district sweeteners, trims and sunset
+  clauses. The work is delivered year by year, with cost overruns and delays.
+- **Pressure groups** (the Merchants' Guild, the Dockworkers' Union, the
+  Green Circle, the Anti-Droid League, the Sovereignty Front and more) react
+  to your laws. Their anger escalates from lobbying to protests, strikes and
+  militant violence.
+- **Trade.** Every world has real exports and imports. You send trade
+  missions and negotiate agreements (tariff cuts, exclusive supply, credit
+  lines, security clauses), which the legislature ratifies. Deals bring
+  revenue, jobs and relief for scarce goods, and are disrupted by
+  blockades, war, pirates and trade disputes.
+- **Disasters and windfalls.** World-appropriate disasters (storm surges,
+  sandstorms, lava surges, undercity collapses, meltdowns, plagues) cost real
+  money. Windfalls (a better hyperdrive motivator, a mineral strike, a
+  tourism boom, a new hyperlane) become multi-year revenue streams depending
+  on how you handle them.
+- **Fiscal notes.** Every bill shows what it costs before you vote.
+- **The war comes home.**
+  - **Planetary autonomy** falls with the Sector Governance Decree, the
+    Empire and the Moffs.
+  - The Clone Wars bring war levies, war contracts, disrupted trade,
+    refugees, raids and a stream of wartime demands.
+  - Under the Empire you pay the Imperial tithe and face your Moff's
+    demands (Academy quotas, garrisons, ISB lists, imposed decrees, rebel
+    cells) and the Moff's veto over your laws.
+  - Your quiet-resistance toolbox includes falsified reports, hidden
+    dissidents, slow-walked decrees, supplies for the rebels and a secret
+    militia.
+
 ## The Senate's power
 
 The Senate starts as a real check on the Chancellor. Every power grab it
@@ -283,6 +338,10 @@ before committees, refusing him and speaking out all raise your **danger**
 | `js/events.js`, `js/scenes.js` | Dossiers and full-screen scenes |
 | `js/empire.js` | Palpatine's enemies: danger, assassination attempts, the investigation, resistance governments, the underground, Imperial-era scenes |
 | `js/senate.js` | Senate power, committee chairs, annual budgets, power grabs and blocking them, Imperial Senate resistance, ministries, career crossroads |
+| `js/lawbook.js` | The expanded law catalogue, the law-making flow, the annual budget, the capital program, fiscal notes |
+| `js/dilemmas.js` | Disasters, windfalls, pressure groups, multi-year investment packages |
+| `js/trade.js` | Goods, trading partners, agreements, disputes |
+| `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |
 | `js/ui.js`, `js/ui_world.js`, `js/ui_issues.js`, `js/main.js` | Interface and input |

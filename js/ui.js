@@ -261,6 +261,7 @@ function viewChamber() {
     const committeeBox = chairKey ? `<p class="small">Committee: <b>${COMMITTEES[chairKey].name}</b>${G.committeeChairs[chairKey] === "player" ? " — you chair it." : ""}</p>
         ${stuckChair ? `<p class="c-against small">⛔ Bottled up in committee by ${esc(stuckChair.name)}. It won't reach the floor until released.</p><button class="tactic" data-act="lobbychair" ${G.ap < 3 ? "disabled" : ""}>Lobby the chair <em>3 capital</em></button>` : ""}
         ${G.committeeChairs[chairKey] === "player" && isSenator() ? (b.held ? `<p class="small c-und">⏸️ You are holding this bill in committee.</p><button class="tactic" data-act="release" data-id="${b.id}">Release it to the floor</button><button class="tactic" data-act="releaseprice" data-id="${b.id}" ${G.ap < 2 ? "disabled" : ""}>Release it for a price <em>2 capital</em><span>Its backers accept your changes and owe you.</span></button>` : `<button class="tactic" data-act="hold" data-id="${b.id}" ${G.ap < 3 || !chairCanHold() ? "disabled" : ""}>⏸️ Hold it in committee <em>3 capital</em><span>${chairCanHold() ? "It won't move until you say so. Its supporters won't like it." : "The Senate has lost this power."}</span></button>`) : ""}
+        ${b.packageBill && b.sponsor === "player" ? `<h4>Negotiate the package</h4><select id="pkgDistrict">${G.districts.map((d, i) => `<option value="${i}">${esc(d.name)}</option>`).join("")}</select><button class="tactic" data-act="pkgneg" data-h="sweetener" data-sel="pkgDistrict" ${G.ap < 3 ? "disabled" : ""}>Add a project for a district <em>3 capital</em><span>+0.8B. Wins that district's legislators.</span></button><button class="tactic" data-act="pkgneg" data-h="trim" ${G.ap < 2 ? "disabled" : ""}>Trim a component <em>2 capital</em><span>Cheaper. The hawks like it.</span></button><button class="tactic" data-act="pkgneg" data-h="sunset" ${G.ap < 2 ? "disabled" : ""}>Promise a sunset clause <em>2 capital</em><span>Taxes and borrowing end when the work is done.</span></button>` : ""}
         ${G.committeeChairs[chairKey] === "player" ? `<button class="tactic" data-act="fasttrack" ${G.ap < 3 ? "disabled" : ""}>⏩ Fast-track to the floor <em>3 capital</em></button><button class="tactic" data-act="bury" ${G.ap < 4 ? "disabled" : ""}>🪦 Bury it in committee <em>4 capital</em><span>Kill it. Its supporters will remember.</span></button>` : ""}` : "";
     return `${arenaTabs}${header}<div class="tabs">${tabs}</div>
         <div class="cols">
@@ -268,6 +269,7 @@ function viewChamber() {
                 ${panel(`BILL ${b.num}: ${esc(b.title)}`, `
                     ${stageBar(billStage(b))}
                     ${scopeTag(b)}
+                    <p class="fiscal-note">💰 <b>Fiscal note:</b> ${esc(fiscalNote(b))}</p>
                     <p>${esc(b.desc)}${b.amended ? ' <span class="hint">amended</span>' : ""}${b.sponsor === "player" ? ' <span class="hint up">your bill</span>' : ""}</p>
                     ${hemicycle(t)}
                     <div class="tally-row"><b class="c-for">FOR ${t.for}</b><b class="c-und">UNDECIDED ${t.und}</b><b class="c-against">AGAINST ${t.against}</b></div>
@@ -395,7 +397,7 @@ function policyPanel(k, galactic) {
         <h4>At full strength</h4><div class="hints">${fx || '<span class="muted small">No direct effect on values.</span>'}</div>
         ${gx ? `<h4>Voters</h4><div class="hints">${gx}</div>` : ""}
         <h4>Factions</h4><div class="hints">${fxn}</div>
-        ${canDecreeHere || canBill ? `
+        ${!galactic ? lawControls(k) : canDecreeHere || canBill ? `
             <label class="muted small">New level: <b id="slv">${lvl}%</b></label>
             <input type="range" min="0" max="100" step="10" value="${lvl}" id="policySlider" data-key="${k}">
             <div class="row">
@@ -418,9 +420,11 @@ function statPanel(k) {
 
 function viewGovernment() {
     const gal = ui.web === "galaxy";
+    const gt = ui.govTab || "web";
+    if (!gal && gt !== "web") return govTabs() + ({ laws: lawbookView, budget: budgetView, packages: packagesView, pressure: pressureView, trade: tradeView }[gt] || lawbookView)();
     const sits = gal ? [] : activeSituations();
     const toggle = `<div class="tabs"><button class="tab ${!gal ? "active" : ""}" data-act="web" data-w="planet">🪐 ${esc(world().name)}</button><button class="tab ${gal ? "active" : ""}" data-act="web" data-w="galaxy">🌌 The Republic</button></div>`;
-    const web = gal ? renderWeb(GAL_POLICIES, G.galPolicies, GAL_STATS, G.gal, []) : renderWeb(POLICIES, G.policies, PLANET_STATS, G.planet, sits);
+    const web = gal ? renderWeb(GAL_POLICIES, G.galPolicies, GAL_STATS, G.gal, []) : renderWeb(webPolicies(), G.policies, PLANET_STATS, G.planet, sits);
     let side = "";
     const sel = ui.policy;
     if (sel && sel.startsWith("p:") && (gal ? GAL_POLICIES : POLICIES)[sel.slice(2)]) side = policyPanel(sel.slice(2), gal);
@@ -428,7 +432,7 @@ function viewGovernment() {
     else if (sel && sel.startsWith("x:")) {
         const s = SITUATIONS.find(x => `x:${x.key}` === sel);
         side = panel(`${s.icon} ${s.name}`, `<p>${s.bad ? "A crisis driven by conditions on the planet. It will persist until they change." : "A good situation. Enjoy it while it lasts."}</p><h4>Effects</h4><div class="hints">${effectHints({ p: s.fx, g: s.g })}</div>`);
-    } else side = panel("How this works", `<p class="small">Click any <b>policy</b> (outer ring) to see what it does and change it. Click a <b>value</b> (centre) to see what drives it. Red boxes are <b>situations</b> — crises that push back on everything.</p><p class="small muted">Changes take months to be felt. Voters react to the announcement immediately.</p>`);
+    } else side = panel("How this works", `<p class="small">The outer ring shows the <b>laws in force</b> — find new ones in the <b>Lawbook</b>. Click any <b>policy</b> to see what it does and change it. Click a <b>value</b> (centre) to see what drives it. Red boxes are <b>situations</b> — crises that push back on everything.</p><p class="small muted">Changes take months to be felt. Voters react to the announcement immediately.</p>`);
 
     const b = gal ? galBudget() : budget();
     const budgetPanel = panel(gal ? "Republic budget" : "Planetary budget", `
@@ -438,7 +442,7 @@ function viewGovernment() {
         ${statRow("Balance", `<span class="${b.net >= 0 ? "c-for" : "c-against"}">${fmt(b.net)}B/mo</span>`)}
         ${statRow("Treasury", `${(gal ? G.galTreasury : G.treasury).toFixed(1)}B`)}
         <p class="muted small">${gal ? (G.office.kind === "chancellor" ? "You set galactic policy." : `Set by Chancellor ${chancellor() ? esc(chancellor().name) : "—"}.`) : governing() ? "You are the government. Every policy is yours to answer for." : "Set by the planetary government. Voters blame it — not you — for its policies."}</p>`);
-    return `${toggle}<div class="cols web-cols"><div class="col-main">${panel("", web, "webpanel")}</div><div class="col-side">${side}${budgetPanel}${rolePowers()}</div></div>`;
+    return `${gal ? "" : govTabs()}${toggle}<div class="cols web-cols"><div class="col-main">${panel("", web, "webpanel")}</div><div class="col-side">${side}${budgetPanel}${rolePowers()}</div></div>`;
 }
 
 function rolePowers() {

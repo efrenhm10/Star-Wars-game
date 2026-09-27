@@ -38,6 +38,10 @@ function endMonth() {
     tickWar();
     tickEmpire();
     tickSenate();
+    tickLawbook();
+    tickDilemmas();
+    tickTrade();
+    tickWartime();
     tickLegislature();
     tickAppropriations();
     tickIssues();

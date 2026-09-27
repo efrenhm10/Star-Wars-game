@@ -498,3 +498,15 @@ ul.comrades li.left { opacity: 0.55; }
 
 .safety-fold summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .safety-fold[open] summary { margin-bottom: 8px; }
+
+/* Lawbook, budget, packages, pressure groups, trade */
+.gov-tabs { margin-bottom: 10px; flex-wrap: wrap; }
+.lawbook { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.lawcat h3 { margin-bottom: 8px; }
+button.law { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 6px 8px; margin: 3px 0; background: transparent; border: 1px solid var(--line, rgba(255,255,255,.08)); border-radius: 6px; color: inherit; cursor: pointer; }
+button.law:hover { border-color: var(--accent); }
+button.law.on { border-color: rgba(76, 195, 138, .5); background: rgba(76, 195, 138, .07); }
+button.law.pending { border-style: dashed; border-color: var(--und); }
+.fiscal-note { padding: 6px 10px; border-left: 3px solid var(--accent2); background: rgba(240, 180, 41, .07); font-size: .88rem; }
+.pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .lawbook, .pg-grid { grid-template-columns: 1fr; } }

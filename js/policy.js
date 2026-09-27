@@ -131,7 +131,7 @@ function activeSituations() {
 
 function statTarget(k) {
     let t = G.base[k];
-    Object.entries(G.policies).forEach(([pk, p]) => { t += (POLICIES[pk].fx[k] || 0) * p.eff; });
+    Object.entries(G.policies).forEach(([pk, p]) => { t += (POLICIES[pk].fx[k] || 0) * p.eff * (typeof fundFactor === "function" ? fundFactor(POLICIES[pk].cat) : 1); });
     activeSituations().forEach(s => { t += s.fx[k] || 0; });
     G.programs.forEach(p => { t += (p.p[k] || 0) * (p.years - p.left + 1) * 0.5; });
     const tr = world().traits;
@@ -150,7 +150,7 @@ function governing() {
 
 function policyGroupEffect(gk) {
     let s = 0;
-    Object.entries(G.policies).forEach(([pk, p]) => { s += (POLICIES[pk].g[gk] || 0) * p.eff; });
+    Object.entries(G.policies).forEach(([pk, p]) => { s += (POLICIES[pk].g[gk] || 0) * p.eff * (typeof fundFactor === "function" ? fundFactor(POLICIES[pk].cat) : 1); });
     return s;
 }
 
@@ -163,8 +163,11 @@ function budget() {
     let spend = 0;
     Object.entries(G.policies).forEach(([k, p]) => {
         const c = POLICIES[k].cost * p.level;
-        if (c < 0) income -= c; else spend += c;
+        if (c < 0) income -= c; else spend += c * (typeof fundMult === "function" ? fundMult(POLICIES[k].cat) : 1);
     });
+    // Revenue streams, trade, the capital program and multi-year packages.
+    if (typeof budgetExtras === "function") { const x = budgetExtras(); income += x.income; spend += x.spend; }
+    if (typeof tradeIncome === "function") income += tradeIncome();
     const interest = G.treasury < 0 ? -G.treasury * 0.012 : 0;
     return { income, spend, interest, net: income - spend - interest };
 }
@@ -219,7 +222,7 @@ function tickPolicies() {
 
 function npcGovernmentMove() {
     const pm = G.pm && npc(G.pm);
-    const keys = Object.keys(POLICIES).filter(k => !POLICIES[k].war || wartime());
+    const keys = Object.keys(POLICIES).filter(k => (!POLICIES[k].war || wartime()) && (typeof policyAvailable !== "function" || policyAvailable(k)) && !POLICIES[k].extreme);
     const liked = pm ? keys.filter(k => (POLICIES[k].f[pm.faction] || 0) > 0) : [];
     const k = liked.length && chance(70) ? pick(liked) : pick(keys);
     const p = G.policies[k];

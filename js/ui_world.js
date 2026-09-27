@@ -149,7 +149,7 @@ function warPanel() {
 function viewPowers() {
     const L = lens();
     const k = G.office.kind;
-    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${k === "senator" ? "" : empirePanels()}${specialPowers()}`;
+    let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${k === "senator" ? "" : empirePanels()}${wartimePanels()}${specialPowers()}`;
     if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
@@ -225,7 +225,7 @@ function executiveDesk() {
         ${panel("📜 Executive orders", `${tact("exec", "Declare a state of emergency", 5, "Unlocks wartime measures for 12 months.", 'data-t="emergency"')}${tact("exec", "Direct government agencies", 3, "", 'data-t="agencies"')}${tact("exec", "Establish temporary regulations", 3, "", 'data-t="regulations"')}${tact("exec", "Allocate emergency resources", 3, "2B from the treasury.", 'data-t="resources"')}`)}
         ${panel("🗂️ Administration", `${cabinetSeats}<select id="cabSel">${npcOptions(locals)}</select>${tact("exec", "Appoint to cabinet", 3, "", 'data-t="cabinet" data-sel="cabSel"')}${tact("exec", "Replace an agency head", 3, "", 'data-t="agencyhead"')}${tact("exec", "Merge agencies", 4, "Saves money; confuses everyone.", 'data-t="merge"')}`)}
         ${panel("🚨 Public safety", `${tact("exec", "Deploy planetary security", 3, "", 'data-t="security"')}${tact("exec", "Increase emergency preparedness", 3, "", 'data-t="preparedness"')}${(G.siege || G.occupied) ? tact("petition", "Request Republic assistance", 4) : ""}`)}
-        ${panel("📈 Economic development", `${tact("exec", "Offer corporate incentives", 3, "", 'data-t="incentives"')}${tact("exec", "Regulate mining", 3, "", 'data-t="mining"')}${tact("exec", "Establish a public enterprise", 4, "", 'data-t="enterprise"')}<select id="tradeSel">${worldOptions(k => G.galaxy[k].align === G.allegiance || G.galaxy[k].align === "neutral")}</select>${tact("exec", "Negotiate a trade agreement", 4, "", 'data-t="trade" data-sel="tradeSel"')}`)}
+        ${panel("📈 Economic development", `${tact("exec", "Offer corporate incentives", 3, "", 'data-t="incentives"')}${tact("exec", "Regulate mining", 3, "", 'data-t="mining"')}${tact("exec", "Establish a public enterprise", 4, "", 'data-t="enterprise"')}<button class="secondary" data-act="gotrade">🚀 Trade agreements and partners →</button>`)}
         ${panel("", `<button class="secondary" data-act="view" data-v="government">🕸️ Open the policy web</button>`)}
     </div></div>`;
 }

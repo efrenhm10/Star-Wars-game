@@ -402,6 +402,9 @@ function resolveBill(b) {
     }
     const passed = t.for > t.against;
     G.bills = G.bills.filter(x => x !== b);
+    if (!passed && b.budgetBill) budgetRejected(b);
+    if (!passed && b.packageBill) packageRejected(b);
+    if (!passed && b.tradeBill) tradeRejected(b);
 
     // How your constituencies and factions judge your vote.
     const changes = [];
@@ -444,6 +447,13 @@ function resolveBill(b) {
 }
 
 function enactBill(b) {
+    // Under the Empire, the Moff can refuse to sign a planetary law.
+    if (typeof imperialVeto === "function" && imperialVeto(b)) {
+        if (b.budgetBill) budgetRejected(b);
+        if (b.packageBill) packageRejected(b);
+        if (b.tradeBill) tradeRejected(b);
+        return [];
+    }
     const m = b.amended ? 0.6 : 1;
     const f = b.fx;
     const e = { p: {}, gal: {}, i: f.i || {} };
@@ -461,6 +471,9 @@ function enactBill(b) {
     }
     if (f.worldAid) e.world = { key: f.worldAid, stability: 15, prosperity: 6 };
     if (b.policyKey) G.policies[b.policyKey].level = b.policyLevel;
+    if (b.budgetBill) budgetPassed(b);
+    if (b.packageBill) { const pkg = G.packages.find(p => p.id === b.packageId); if (pkg) activatePackage(pkg); }
+    if (b.tradeBill) tradeRatified(b);
     if (f.custom && b.arena === "senate" && b.sponsor === "player") G.approPool -= f.cost || 0;
     if (f.custom && b.arena === "senate" && b.sponsor === "player" && f.scope === "galaxy") {
         e.influence = (e.influence || 0) + 6; e.rep = (e.rep || 0) + 4;

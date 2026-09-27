@@ -53,6 +53,24 @@ const ACTIONS = {
     petition: () => startPetition(),
     rebel: d => rebelAction(d.t),
     probe: d => probeChancellor(d.t),
+    govtab: d => { ui.govTab = d.t; render(); },
+    lawpick: d => { ui.govTab = "web"; ui.policy = `p:${d.key}`; render(); },
+    adjustpolicy: d => adjustPolicy(d.key, +d.d),
+    repealbill: d => proposePolicyBill(d.key, 0),
+    submitbudget: () => submitBudget(),
+    cipmove: d => cipMove(+d.i, +d.d),
+    cipremove: d => cipRemove(+d.i),
+    pkgnew: d => { ui.pkg = pkgDefaults(d.t); render(); },
+    pkgsubmit: () => submitPackage(ui.pkg),
+    pkgcancel: () => { ui.pkg = null; render(); },
+    pkgneg: d => { const b = selectedBill(); if (b) pkgNegotiate(b, d.h, d.sel ? selVal(d.sel) : null); },
+    pg: d => pgAction(d.k, d.t),
+    tradesel: d => { ui.tradeSel = d.k; render(); },
+    trademission: d => tradeMission(d.k),
+    tradedeal: d => negotiateDeal(d.k),
+    tradecancel: d => cancelDeal(d.id),
+    gotrade: () => { view = "government"; ui.govTab = "trade"; render(); },
+    govresist: d => govResist(d.t),
     hold: d => { const b = G.bills.find(x => x.id === d.id) || selectedBill(); if (b) holdBill(b); },
     release: d => { const b = G.bills.find(x => x.id === d.id) || selectedBill(); if (b) releaseBill(b, false); },
     releaseprice: d => { const b = G.bills.find(x => x.id === d.id) || selectedBill(); if (b) releaseBill(b, true); },
@@ -112,6 +130,11 @@ document.addEventListener("click", e => {
 });
 
 document.addEventListener("change", e => {
+    const ds = e.target.dataset || {};
+    if (ds.pb && G.pbudget && G.pbudget.draft) { setDraft(ds.pb, e.target.value); render(); return; }
+    if (ds.pkc && ui.pkg) { ui.pkg.comps = e.target.checked ? ui.pkg.comps.concat(ds.pkc) : ui.pkg.comps.filter(x => x !== ds.pkc); render(); return; }
+    if (ds.pkf && ui.pkg) { const [a, b2] = ds.pkf.split(":"); if (a === "fund") ui.pkg.funding[b2] = +e.target.value; else ui.pkg[a] = a === "years" ? +e.target.value : e.target.value; render(); return; }
+    if (ds.tt) { const T = initTrade(); T.terms = e.target.checked ? T.terms.concat(ds.tt) : T.terms.filter(x => x !== ds.tt); render(); return; }
     const bf = e.target.dataset && e.target.dataset.bf;
     if (bf && ui.builder) { ui.builder[bf] = ["amount", "years"].includes(bf) ? +e.target.value : e.target.value; render(); return; }
     const bp = e.target.dataset && e.target.dataset.bp;
@@ -171,7 +194,7 @@ function boot() {
     $("#continueBtn").addEventListener("click", () => {
         if (loadGame() && G.record) {
             // Bring older saves up to date.
-            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {}; initEmpireState();
+            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {}; initEmpireState(); initLawbook(); initTrade();
             if (world().special && G.assembly == null && G.lendingRate == null && G.intel == null && G.food == null && G.corpPower == null) initSpecial();
             view = "office"; showScreen("play"); render();
         }
