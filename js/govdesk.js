@@ -567,32 +567,21 @@ Object.assign(SCENES, {
             { label: "No ceremony", hint: "Just open the doors.", go: () => {} }
         ] }),
 
-    cip_priority: ctx => {
-        const q = G.cip.queue.filter(x => x.status === "queued" && x.key !== ctx.key);
-        const item = G.cip.queue.find(x => x.key === ctx.key);
-        if (!item) return { tag: "", title: "", body: "", choices: [{ label: "Continue" }] };
-        const left = G.cip.frozen ? 0 : G.cip.remaining;
-        return { tag: "CAPITAL IMPROVEMENT PROGRAM", title: `Where does ${item.name} rank?`,
-            body: `<p><b>${esc(item.name)}</b> · ${item.cost.toFixed(1)}B. This year's capital budget has <b>${left.toFixed(1)}B</b> left.</p>${q.length ? `<p class="small">Waiting for funding, in order:</p><ol class="small">${q.map(x => `<li>${esc(x.name)} — ${x.cost.toFixed(1)}B</li>`).join("")}</ol>` : '<p class="small muted">Nothing else is waiting.</p>'}`,
+    cip_overbudget: ctx => {
+        const q = G.cip.queue.find(x => x.key === ctx.key);
+        if (!q) return { tag: "", title: "", body: "", choices: [{ label: "Continue" }] };
+        const rate = bondRate();
+        return { tag: "CAPITAL IMPROVEMENT PROGRAM", title: `${q.name} doesn't fit this year`,
+            body: `<p><b>${esc(q.name)}</b> costs <b>${q.cost.toFixed(1)}B</b>. This year's capital budget has <b>${G.cip.frozen ? "0" : G.cip.remaining.toFixed(1)}B</b> left.</p><p class="small">Treasury: ${G.treasury.toFixed(1)}B · credit rating ${creditRating()}.</p>`,
             choices: [
-                { label: "Top priority", hint: item.cost <= left ? "Funded now." : "First in line when money frees up.", go: () => placeCip(ctx.key, 0) },
-                ...q.slice(0, 4).map((x, i) => ({ label: `After ${x.name}`, go: () => placeCip(ctx.key, i + 1) })),
-                ...(q.length > 4 ? [{ label: "At the end of the line", go: () => placeCip(ctx.key, q.length) }] : [])
+                { label: `Take it out of the treasury (${q.cost.toFixed(1)}B)`, hint: G.treasury < q.cost ? "The treasury will be overdrawn — overdraft interest is steep." : "Outside the capital budget.", go: () => cipDecide(q.key, "treasury") },
+                { label: "Borrow: sell bonds for it", hint: `${q.cost.toFixed(1)}B at ${(rate * 100).toFixed(1)}% over ten years — about ${(q.cost * (rate + 0.1)).toFixed(2)}B a year.`, go: () => cipDecide(q.key, "borrow") },
+                { label: "Push it to next year's program", hint: "First in line when the new capital budget arrives.", go: () => cipDecide(q.key, "defer") },
+                { label: "Forget about it", hint: "Off the list. The need remains.", go: () => cipDecide(q.key, "drop") }
             ] };
     }
+
 });
-
-function placeCip(key, pos) {
-    const c = G.cip;
-    const item = c.queue.find(x => x.key === key);
-    c.queue = c.queue.filter(x => x !== item);
-    const waiting = c.queue.filter(x => x.status === "queued");
-    const anchor = waiting[pos];
-    const idx = anchor ? c.queue.indexOf(anchor) : c.queue.length;
-    c.queue.splice(idx, 0, item);
-    fundCip();
-}
-
 
 // ── The desk ──────────────────────────────────────────────────────
 
@@ -632,6 +621,7 @@ function govDesk() {
             <p class="small muted">Budget status: ${esc(pb.status)}. Capital program: ${pb.cip}B this year, ${G.cip.frozen ? "frozen" : `${G.cip.remaining.toFixed(1)}B uncommitted`}.</p>
             <button class="secondary" data-act="gobudget">Open the budget →</button>`)}
         ${requestsPanel()}
+        ${cipPanel(true)}
         ${panel("🏗️ Planetary infrastructure", `<p class="small">What ${esc(world().name)} has, and what its population needs. Builds go into the capital program; you decide where they rank.</p><div class="infra-grid">${infra}</div>`)}
         ${panel("📈 Economic development", `<p class="small">Court companies to bring jobs and taxes. They weigh your workforce, your infrastructure and your offer.</p>
             ${p ? `<div class="bill-preview"><div class="record-title">NEGOTIATING</div><h3>${SECTORS[p.sector].icon} ${esc(p.firm)}</h3>

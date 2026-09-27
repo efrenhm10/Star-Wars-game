@@ -59,6 +59,7 @@ const ACTIONS = {
     submitbudget: () => submitBudget(),
     cipmove: d => cipMove(+d.i, +d.d),
     cipremove: d => cipRemove(+d.i),
+    approvecip: () => approveCip(),
     pkgnew: d => { ui.pkg = pkgDefaults(d.t); render(); },
     pkgsubmit: () => submitPackage(ui.pkg),
     pkgcancel: () => { ui.pkg = null; render(); },
