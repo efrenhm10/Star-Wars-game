@@ -204,6 +204,19 @@ desk is what you run. The money lives in **Policy → Budget**.
   **fly to their headquarters** for a three-round conversation with a CEO
   who has a personality and hidden priorities, and who tells you what they
   need.
+- **Homegrown companies.** Instead of courting an offworld firm, you can
+  back a local entrepreneur with a startup grant, a development-bank loan,
+  a worker cooperative or a public stake. Local companies hire entirely
+  locally, pay tax from day one and keep profits on your world. They grow,
+  or fail, depending on your workforce and infrastructure.
+- **Everything connects.**
+  - Each tax has a base that grows with the economy: income tax with jobs,
+    corporate tax with companies paying after their holidays, docking
+    duties and tariffs with trade, mining licences with mining.
+  - Bills passed in the legislature update the Lawbook.
+  - New industries become exports.
+  - Investment packages raise the infrastructure counters.
+  - Wealth, resources and vulnerability stars move as you build.
 - **Debt.** Bonds carry real balances, interest and debt service, with a
   credit rating. Multi-year laws and deals are paid year by year.
 - **Coruscant.** Republic matching grants must be won: you testify, lobby

@@ -390,7 +390,7 @@ function newCareer({ worldKey, roleIndex, name, ideology, app }) {
     spawnBill(arena() === "none" ? "senate" : arena());
     if (arena() === "local") spawnBill("senate");
     seedIssues();
-    initLawbook(); initTrade(); initAdvisors(); initInfra(); initSectors(); initDebt();
+    initLawbook(); initTrade(); initAdvisors(); initInfra(); initSectors(); initDebt(); initEcon();
     seedInbox();
 }
 

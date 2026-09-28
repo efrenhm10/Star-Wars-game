@@ -479,6 +479,7 @@ function enactBill(b) {
     if (b.budgetBill) budgetPassed(b);
     if (b.packageBill) { const pkg = G.packages.find(p => p.id === b.packageId); if (pkg) activatePackage(pkg); }
     if (b.tradeBill) tradeRatified(b);
+    syncLawbook(b);
     if (f.custom && b.arena === "senate" && b.sponsor === "player") G.approPool -= f.cost || 0;
     if (f.custom && b.arena === "senate" && b.sponsor === "player" && f.scope === "galaxy") {
         e.influence = (e.influence || 0) + 6; e.rep = (e.rep || 0) + 4;

@@ -335,6 +335,7 @@ function completeComponent(p, s) {
     const c = PACKAGE_TYPES[p.type].components.find(x => x.key === s.key);
     Object.entries(c.fx).forEach(([k, v]) => { G.base[k] += v; });
     if (c.defense) G.fortify = (G.fortify || 0) + c.defense;
+    packageInfra(c.key, p.title);
     report(`${PACKAGE_TYPES[p.type].icon} Year ${p.year} of ${p.years}: ${c.name}`, `Part of the ${p.title} opens.`, applyEffects({ g: c.g, trust: 1 }));
 }
 

@@ -34,7 +34,9 @@ function attr(k) {
     if (k === "stability" && G && G.galaxy && G.galaxy[G.worldKey]) {
         return clamp(Math.round(G.galaxy[G.worldKey].stability / 20 + 0.5), 1, 5);
     }
-    return w.ratings[k] || 3;
+    const base = w.ratings[k] || 3;
+    if (["wealth", "resources", "vulnerability"].includes(k) && typeof liveAttr === "function" && G && G.planet) return clamp(Math.round(liveAttr(k, base)), 1, 5);
+    return base;
 }
 
 function attrLine(k, v) {

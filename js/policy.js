@@ -174,7 +174,7 @@ function budget() {
     let spend = 0;
     Object.entries(G.policies).forEach(([k, p]) => {
         const c = POLICIES[k].cost * p.level;
-        if (c < 0) income -= c; else spend += c * (typeof fundMult === "function" ? fundMult(POLICIES[k].cat) : 1);
+        if (c < 0) income -= c * (typeof taxBaseM === "function" ? taxBaseM(k) : 1); else spend += c * (typeof fundMult === "function" ? fundMult(POLICIES[k].cat) : 1);
     });
     // Revenue streams, trade, the capital program and multi-year packages.
     if (typeof budgetExtras === "function") { const x = budgetExtras(); income += x.income; spend += x.spend; }

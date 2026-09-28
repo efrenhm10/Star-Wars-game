@@ -392,7 +392,7 @@ function policyPanel(k, galactic) {
     return panel(`${d.icon} ${esc(d.name)}`, `
         <p class="muted small">${POLICY_CATS[d.cat].name}</p>
         <p class="money-line">💰 ${galactic ? (d.cost < 0 ? `Raises ${(-d.cost * p.level * 12).toFixed(1)}B a year for the Republic.` : `Costs the Republic ${(d.cost * p.level * 12).toFixed(1)}B a year.`)
-            : d.cost < 0 ? (p.level > 0 ? `Brings in <b>${(-d.cost * p.level * 12).toFixed(1)}B a year</b> at its current rate (${Math.round(p.level * 100)}%). Collecting it costs nothing.` : `Not law yet. At 30% it would bring in about ${(-d.cost * 0.3 * 12).toFixed(1)}B a year.`)
+            : d.cost < 0 ? (p.level > 0 ? `Brings in <b>${(-d.cost * p.level * 12 * taxBaseM(k)).toFixed(1)}B a year</b> at its current rate (${Math.round(p.level * 100)}%). Collecting it costs nothing.${taxBase(k).why.length ? ` Its base has grown: ${esc(taxBase(k).why.join(", "))}.` : ""}` : `Not law yet. At 30% it would bring in about ${(-d.cost * 0.3 * 12).toFixed(1)}B a year.`)
             : d.cost > 0 ? (p.level > 0 ? `Costs <b>${(d.cost * p.level * 12 * (typeof fundMult === "function" ? fundMult(d.cat) : 1)).toFixed(1)}B a year</b> to run at its current level.` : `Not law yet. At 30% it would cost about ${(d.cost * 0.3 * 12).toFixed(1)}B a year to run.`)
             : "Costs almost nothing to run — it works through the rules it sets."}</p>
         <div class="statrow"><span>Level</span><b>${levelWord(p.level)} (${lvl}%)</b></div>
@@ -459,7 +459,11 @@ function rolePowers() {
     if (k === "senator") out = `<p class="small muted">Senators don't run the planet — use your Senate Desk to bring money home.</p>`;
     if (k === "clan") out = G.clans.map(c => `<div class="statrow"><span>Clan ${esc(c.name)}</span><b>${Math.round(c.loyalty)}</b></div>${bar(c.loyalty)}`).join("") + `<select id="clanSel">${G.clans.map(c => `<option>${esc(c.name)}</option>`).join("")}</select>` + btn("role", "⚔️ Court a clan", 3, 'data-type="clan"') + btn("role", "🔥 Hold a conclave", 3, 'data-type="conclave"');
     if (k === "movement") out = statRow("Independence support", `${Math.round(G.indep)}%`, G.indep) + btn("role", "📣 Mass rally", 3, 'data-type="rally"') + btn("role", "🏗️ Build shadow institutions", 3, 'data-type="shadow"') + btn("role", "🤝 Negotiate autonomy", 3, 'data-type="autonomy"');
-    if (k === "opposition" || k === "candidate") out = groupSel + btn("role", "🎯 Campaign stop", 3, 'data-type="stop" data-group="1"') + btn("role", "⚔️ Attack the government", 3, 'data-type="attack" data-group="1"');
+    if (k === "opposition" || k === "candidate") {
+        const big = groupEntries().sort((a, b) => b[1].w - a[1].w).slice(0, 4);
+        out = `<h4>Campaign stops</h4><p class="small muted">Rally a group of voters in person.</p>` + big.map(([g, v]) => btn("role", `🎯 ${GROUPS[g].icon} ${GROUPS[g].name} (${Math.round(v.a)}% like you)`, 3, `data-type="stop" data-arg="${g}"`)).join("")
+            + `<h4>Attack the government</h4><p class="small muted">Make the case to the voters the government has failed most.</p>` + groupEntries().sort((a, b) => a[1].a - b[1].a).slice(0, 2).map(([g]) => btn("role", `⚔️ …to ${GROUPS[g].icon} ${GROUPS[g].name}`, 3, `data-type="attack" data-arg="${g}"`)).join("");
+    }
     if (["local", "executive", "monarch"].includes(k)) out = `<p class="small muted">Your office can quietly fix problems for the groups that are angriest with you.</p>` + groupEntries().sort((a, b) => a[1].a - b[1].a).slice(0, 3).map(([g, v]) => btn("role", `📞 Constituent services: ${GROUPS[g].icon} ${GROUPS[g].name} (${Math.round(v.a)}%)`, 3, `data-type="service" data-arg="${g}"`)).join("");
     if (k === "minister") out = btn("role", `🏢 Ministry initiative`, 3, 'data-type="ministry"', "4 influence");
     if (k === "chancellor") out = ["peace", "fleet", "trade", "relief"].map(o => btn("role", { peace: "🕊️ Open peace talks", fleet: "🚀 Expand the fleet", trade: "📦 Sign a trade compact", relief: "🧳 Galaxy-wide relief" }[o], 3, `data-type="order" data-arg="${o}"`, "5 influence")).join("");

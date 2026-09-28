@@ -24,6 +24,17 @@ const TRADE_PROFILE = {
 };
 
 function tradeProfile(k) {
+    if (k === G.worldKey && G.sectors) {
+        // Your own exports grow with the industries you build.
+        const [ex0, im0] = baseProfile(k);
+        const built = Object.keys(G.sectors).filter(s => G.sectors[s].str >= 40 || (G.firms || []).some(f => f.sector === s && f.open && !f.failed)).map(s => SECTOR_GOODS[s]);
+        const ex = [...new Set(ex0.concat(built))];
+        return [ex, im0.filter(g => !ex.includes(g))];
+    }
+    return baseProfile(k);
+}
+
+function baseProfile(k) {
     if (TRADE_PROFILE[k]) return TRADE_PROFILE[k];
     const r = (WORLDS[k] || BACKGROUND_WORLDS[k] || {}).region;
     return r === "core" ? [["tech", "finance"], ["food"]] : r === "mid" ? [["food", "ore"], ["ships", "tech"]] : [["ore", "food"], ["medicine", "tech"]];
@@ -175,6 +186,10 @@ function tickTrade() {
         if (blockade || (G.galaxy[d.world] && G.galaxy[d.world].stability < 15)) { if (d.status === "active") { d.status = "suspended"; report("Trade suspended", `${blockade ? "The blockade" : `Chaos on ${worldName(d.world)}`} halts trade with ${worldName(d.world)}.`); } return; }
         if (d.status === "suspended") { d.status = "active"; report("Trade resumes", `Freighters are moving again between ${world().name} and ${worldName(d.world)}.`); }
         d.volume = clamp(d.volume + (100 - d.volume) * 0.05);
+        // New industries at home mean more to sell under existing deals.
+        const m = tradeMatch(G.worldKey, d.world);
+        const added = m.sell.filter(g => !d.sell.includes(g));
+        if (added.length) { d.sell = d.sell.concat(added); added.forEach(() => { G.base.employment += 1.5; }); report(`📦 More to sell to ${worldName(d.world)}`, `Your agreement now covers ${added.map(g => GOODS[g].name.toLowerCase()).join(" and ")} from your new industries.`); }
         if (d.terms.includes("security") && G.galaxy[d.world].stability < 35 && chance(5)) { G.garrison = Math.max(0, G.garrison - 6); report("Our treaty obligations", `${worldName(d.world)} is in trouble. Under the security clause, some of your forces are sent to help.`); }
     });
     const active = T.deals.filter(d => d.status === "active");
@@ -215,7 +230,7 @@ function tradeView() {
     const T = initTrade();
     const gov = governing();
     const [ex, im] = tradeProfile(G.worldKey);
-    const partners = Object.keys(G.galaxy).filter(k => k !== G.worldKey && !G.galaxy[k].destroyed).map(k => ({ k, m: tradeMatch(G.worldKey, k) })).filter(x => x.m.sell.length + x.m.buy.length > 0).sort((a, b) => (b.m.sell.length * 2 + b.m.buy.length) - (a.m.sell.length * 2 + a.m.buy.length)).slice(0, 14);
+    const partners = Object.keys(G.galaxy).filter(k => k !== G.worldKey && !G.galaxy[k].destroyed).map(k => ({ k, m: tradeMatch(G.worldKey, k) })).sort((a, b) => (b.m.sell.length * 2 + b.m.buy.length) - (a.m.sell.length * 2 + a.m.buy.length) || worldName(a.k).localeCompare(worldName(b.k)));
     const sel = ui.tradeSel && G.galaxy[ui.tradeSel] ? ui.tradeSel : partners[0] && partners[0].k;
     const deals = T.deals.filter(d => ["active", "suspended", "proposed"].includes(d.status));
     const selM = sel ? tradeMatch(G.worldKey, sel) : null;

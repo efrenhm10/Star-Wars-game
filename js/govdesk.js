@@ -423,14 +423,14 @@ function closeDeal() {
 function tickFirms() {
     (G.firms || []).forEach(f => {
         const s = SECTORS[f.sector];
-        if (!f.open && monthsNow() >= f.opens) {
+        if (!f.open && !f.failed && monthsNow() >= f.opens) {
             f.open = true;
             G.base.employment += f.jobs / 2500;
             G.base.environment += s.env;
             if (s.ineq) G.base.inequality += s.ineq;
-            pushScene("opening", { name: `${f.firm}'s new facility`, g: { workers: 3, business: 3 } });
+            pushScene("opening", { name: f.localCo ? f.firm : `${f.firm}'s new facility`, g: { workers: 3, business: 3 } });
         }
-        if (f.open && monthsNow() === f.taxFrom) { addStream(`Taxes from ${f.firm}`, f.rev, 240); report(`${s.icon} ${f.firm} starts paying taxes`, "The tax holiday is over."); }
+        if (f.open && monthsNow() === f.taxFrom) report(`${s.icon} ${f.firm} starts paying taxes`, G.policies.corporate_tax && G.policies.corporate_tax.level > 0 ? `The tax holiday is over. ${f.firm}'s ${f.jobs.toLocaleString()} jobs now count toward your Corporate Tax base (${taxBase("corporate_tax").m.toFixed(2)}×).` : "The tax holiday is over — but Corporate Tax isn't law here, so they pay nothing. Your workers still pay income tax.");
     });
     if (G.prospect && monthsNow() - G.prospect.since > 8) { report("The prospect goes cold", `${G.prospect.firm} has stopped returning calls.`); G.prospect = null; }
 }
@@ -595,7 +595,7 @@ function govDesk() {
     const cabinet = Object.entries(CABINET_SEATS).map(([k, s]) => { const a = G.advisors[k]; return `<div class="advisor"><div class="statrow"><b>${s.icon} ${esc(a.name)}</b><span class="small muted">${esc(s.title)} · ${FACTIONS[a.faction].icon} ${"★".repeat(a.skill)}${"☆".repeat(5 - a.skill)}</span></div><p class="small">${esc(advice(k))}</p><button class="mini" data-act="advisor" data-k="${k}" ${G.ap < 3 ? "disabled" : ""}>Replace · 3</button></div>`; }).join("");
     const infra = INFRA.map(x => {
         const n = infraNeed(x.key);
-        const building = G.cip.queue.filter(q => q.infra && q.infra.key === x.key && q.status !== "done").reduce((s, q) => s + q.infra.units, 0) + G.projects.filter(q => q.infra && q.infra.key === x.key && q.monthsLeft > 0 && !G.cip.queue.some(c => c.key === q.key)).reduce((s, q) => s + q.infra.units, 0);
+        const building = G.cip.queue.filter(q => q.infra && q.infra.key === x.key && q.status !== "done").reduce((s, q) => s + q.infra.units, 0) + G.projects.filter(q => q.infra && q.infra.key === x.key && q.monthsLeft > 0 && !G.cip.queue.some(c => c.key === q.key)).reduce((s, q) => s + q.infra.units, 0) + packageInfraComing(x.key);
         const opts = infraOptions(x);
         return `<div class="infra"><div class="statrow"><b>${esc(x.name)}</b><span class="small">${x.pct ? `${n.have}%` : `${n.have} / ${n.need}`}${building ? ` <span class="c-und">(+${building}${x.pct ? "%" : ""} coming)</span>` : ""}</span></div>${bar(n.have / n.need * 100, n.have / n.need > 0.7 ? "good" : "bad")}
             <p class="small muted">${n.gap ? (x.pct ? `${n.gap}% still to build.` : `Needs ${n.gap} more.`) : "Fully built out."}</p>
@@ -613,7 +613,7 @@ function govDesk() {
             <h4>To flourish, ${esc(s.name.toLowerCase())} needs</h4>
             <ul class="conds">${conds.map(c => `<li class="${c.ok ? "c-for" : pending.includes(c.asset) ? "c-und" : "muted"}">${c.ok ? "✅" : pending.includes(c.asset) ? "🏗️" : c.asset ? "⬜" : "⚠️"} ${esc(c.label)}${c.note ? ` <span class="muted">(${esc(c.note)})</span>` : ""}${c.asset && !c.ok && !pending.includes(c.asset) ? (() => { const a = SECTOR_ASSETS[k].find(x => x[0] === c.asset); return ` <button class="mini" data-act="sectorbuild" data-k="${k}" data-a="${c.asset}" ${G.ap < 1 ? "disabled" : ""}>Build · ${a[2]}B</button>`; })() : ""}</li>`).join("")}</ul>
             <p class="muted small">Missing education or infrastructure? Build schools and grid in the infrastructure panel, or fund workforce training. Each public investment raises this industry's strength and makes companies more interested.</p>
-            ${suit.m < 0.35 ? `<p class="small c-against">No company will build this industry here.</p>` : `<button class="mini" data-act="courtfirm" data-k="${k}" ${G.ap < 3 || G.prospect ? "disabled" : ""}>Court a company · 3</button>`}</details>`;
+            ${suit.m < 0.35 ? `<p class="small c-against">No company will build this industry here.</p>` : `<div class="row"><button class="mini" data-act="courtfirm" data-k="${k}" ${G.ap < 3 || G.prospect ? "disabled" : ""}>🚀 Court an offworld company · 3</button>${(() => { const r = localReady(k); return r.ok ? `<button class="mini" data-act="planlocal" data-k="${k}" ${G.ap < 2 || G.localPlan ? "disabled" : ""}>🌱 Back a local company · 2</button>` : `<span class="small muted">🌱 No local company yet: ${esc(r.why)}.</span>`; })()}</div>`}</details>`;
     }).join("");
     return `<div class="era-banner"><b>YOUR GOVERNMENT</b> · What you run: your cabinet, the planet's infrastructure and its economy. Problems arrive in the <b>Agenda</b>; the money is in <b>Policy → Budget</b>.</div>
     <div class="cols"><div class="col-main">
@@ -636,9 +636,15 @@ function govDesk() {
                 ${ev.localShare < 0.6 ? '<p class="small c-und">Your workforce lacks the skills they need, so most jobs will go to offworlders — unless you require local hiring (which they dislike).</p>' : ""}
                 <p>Chance they accept: <b>${ev.chance}%</b></p>
                 <div class="row"><button class="primary" data-act="closedeal" ${G.ap < 4 ? "disabled" : ""}>Make the offer · 4</button><button class="secondary" data-act="dropdeal">Walk away</button></div></div>` : ""}
+            ${G.localPlan ? (() => { const lp = G.localPlan; const sup = LOCAL_SUPPORT[lp.support]; return `<div class="bill-preview"><div class="record-title">A HOMEGROWN COMPANY</div><h3>${SECTORS[lp.sector].icon} ${esc(lp.name)}</h3>
+                <p class="small">Founder: ${esc(lp.founder)} · ${lp.jobs.toLocaleString()} jobs, all local · pays taxes from day one · profits stay on ${esc(world().name)}.</p>
+                <label class="small muted">How will you back it?</label><div class="seg small-seg">${Object.entries(LOCAL_SUPPORT).map(([k2, v]) => `<button class="${lp.support === k2 ? "on" : ""}" data-act="localsup" data-v="${k2}">${v.name}</button>`).join("")}</div>
+                <p class="small">${esc(sup.note)}</p>
+                <p>Chance it thrives: <b>${localOdds()}%</b>${sectorFit(lp.sector).gaps.length ? ` <span class="small c-und">(held back by: ${sectorFit(lp.sector).gaps.map(g => g.stat).join(", ")})</span>` : ""}</p>
+                <div class="row"><button class="primary" data-act="launchlocal" ${G.ap < 3 ? "disabled" : ""}>Launch it · 3</button><button class="secondary" data-act="droplocal">Not now</button></div></div>`; })() : ""}
             <div class="sector-grid">${sectors}</div>
             <div class="row">${tact("train", "🔧 Fund workforce training", 3, "Education up; 0.5B over three years.")}<button class="secondary" data-act="gotrade">🚀 Trade missions & agreements →</button></div>
-            ${(G.firms || []).length ? `<h4>Companies you brought here</h4>${G.firms.map(f => `<p class="small">${SECTORS[f.sector].icon} <b>${esc(f.firm)}</b> — ${f.open ? `${f.jobs.toLocaleString()} jobs${monthsNow() < f.taxFrom ? `, tax-free until ${eraYear(33 - Math.floor(f.taxFrom / 12))}` : ", paying taxes"}` : `opens in ${f.opens - monthsNow()} months`}</p>`).join("")}` : ""}`)}
+            ${(G.firms || []).length ? `<h4>Companies on ${esc(world().name)}</h4>${G.firms.map((f, i) => `<p class="small">${SECTORS[f.sector].icon} ${f.localCo ? "🌱" : "🚀"} <b>${esc(f.firm)}</b> — ${f.failed ? '<span class="c-against">closed</span>' : f.open ? `${f.jobs.toLocaleString()} jobs${monthsNow() < f.taxFrom ? `, tax-free until ${eraYear(33 - Math.floor(f.taxFrom / 12))}` : ", paying taxes"}` : `opens in ${f.opens - monthsNow()} months`}${f.localCo && f.open && !f.failed ? ` <button class="mini" data-act="expandlocal" data-i="${i}" ${G.ap < 3 ? "disabled" : ""}>Expansion loan · 0.8B</button>` : ""}</p>`).join("")}` : ""}`)}
     </div><div class="col-side">
         ${panel("🗂️ Your cabinet", cabinet)}
         ${panel("📜 Executive orders", `${tact("exec", "Declare a state of emergency", 5, "Unlocks wartime measures for 12 months.", 'data-t="emergency"')}${tact("exec", "Allocate emergency resources", 3, "2B from the treasury.", 'data-t="resources"')}${tact("exec", "Deploy planetary security", 3, "", 'data-t="security"')}`)}
@@ -651,7 +657,219 @@ function govDesk() {
 function tickGovDesk() {
     initAdvisors(); initInfra(); initDebt();
     tickDebt();
-    initSectors();
+    initSectors(); initEcon();
     tickFirms();
+    tickLocalFirms();
     tickRequests();
+}
+
+
+// ── Connecting the dots: the economy feeds the budget ─────────────
+
+function openFirms() { return (G.firms || []).filter(f => f.open); }
+function payingFirms() { return openFirms().filter(f => monthsNow() >= f.taxFrom); }
+function sectorStr(k) { return (G.sectors && G.sectors[k]) ? G.sectors[k].str : 0; }
+
+// A snapshot of the economy when the career began, so every tax base starts at 1×.
+function initEcon() {
+    if (G.econ0) return G.econ0;
+    initSectors(); initInfra();
+    G.econ0 = { emp: G.planet.employment, homes: G.planet.housing + G.planet.infrastructure, spaceport: infraNeed("spaceport").have, defence: infraNeed("defence").have,
+        str: Object.fromEntries(Object.keys(SECTORS).map(k => [k, sectorStr(k)])) };
+    return G.econ0;
+}
+
+// How big each tax's base is now, compared with the start — and why.
+function taxBase(k) {
+    const e0 = initEcon();
+    const emp = G.planet.employment - e0.emp;
+    const jobs = openFirms().reduce((s, f) => s + (f.local || f.jobs), 0);
+    const payJobs = payingFirms().reduce((s, f) => s + f.jobs, 0);
+    const deals = (G.trade ? G.trade.deals : []).filter(d => d.status === "active").length;
+    const logJobs = openFirms().filter(f => ["logistics", "shipyards"].includes(f.sector)).reduce((s, f) => s + f.jobs, 0);
+    const port = infraNeed("spaceport").have - e0.spaceport;
+    const d = s => sectorStr(s) - (e0.str[s] || 0);
+    const why = [];
+    let m = 1;
+    const add = (v, text) => { if (Math.abs(v) >= 0.02) { m += v; why.push(`${v > 0 ? "+" : ""}${Math.round(v * 100)}% ${text}`); } };
+    switch (k) {
+        case "income_tax": add(emp * 0.015, "employment"); add(jobs / 150000, "jobs at the companies on your world"); break;
+        case "sales_tax": add(emp * 0.012, "employment and spending"); add(jobs / 150000, "new workers' spending"); break;
+        case "corporate_tax": add(payJobs / 60000, `${payingFirms().length} companies paying tax`); add((Object.keys(SECTORS).reduce((s, x) => s + d(x), 0) / Object.keys(SECTORS).length) / 150, "stronger industries"); break;
+        case "docking_duties": add(deals * 0.08, `${deals} trade agreement${deals === 1 ? "" : "s"}`); add(port / 200, "a more modern spaceport"); add(logJobs / 30000, "freight and shipping companies"); break;
+        case "tariffs": add(deals * 0.06, "imports under your trade agreements"); break;
+        case "starship_fees": add((d("shipyards") + d("logistics")) / 150, "shipbuilding and freight"); add(logJobs / 40000, "shipping companies' fleets"); break;
+        case "mining": add(d("mining") / 80, "a bigger mining industry"); break;
+        case "property_tax": add((G.planet.housing + G.planet.infrastructure - e0.homes) / 200, "more and better housing and infrastructure"); break;
+        case "luxury_tax": add(d("tourism") / 150, "tourism"); add(emp * 0.005, "prosperity"); break;
+        case "gambling": add(d("tourism") / 100, "tourism"); break;
+        case "droid_tax": add(d("droids") / 100, "droid manufacturing"); break;
+        default: add(emp * 0.005, "the wider economy");
+    }
+    return { m: Math.round(clamp(m, 0.4, 3) * 100) / 100, why };
+}
+function taxBaseM(k) { return POLICIES[k] && POLICIES[k].cost < 0 && G.planet ? taxBase(k).m : 1; }
+
+
+// ── Connecting the dots: laws passed in the legislature update the Lawbook ──
+
+const CAT_LAW = { health: "healthcare", housing: "housing", education: "schools", transit: "transit", jobs: "small_business", industry: "subsidies", food: "food_rations",
+    security: "police", water: "water_purif", environment: "emissions", labor: "labour", finance: "banking_reg", trade: "tariffs", refugees: "refugee_resettle", veterans: "veterans", sovereignty: "border_controls" };
+const STATIC_LAW = { housing_program: ["housing", 0.2], min_wage: ["min_wage", 0.3], env_protection: ["emissions", 0.2], police_expansion: ["police", 0.2], health_plan: ["healthcare", 0.2],
+    school_reform: ["schools", 0.2], industry_tax_cut: ["corporate_tax", -0.1], anti_corruption: ["anti_corruption", 0.3], land_rights: ["protected", 0.2] };
+
+function syncLawbook(b) {
+    if (b.arena !== "local" || b.policyKey || b.budgetBill || b.packageBill || b.tradeBill) return;
+    const f = b.fx || {};
+    let k = null, d = 0;
+    if (STATIC_LAW[b.key]) [k, d] = STATIC_LAW[b.key];
+    else if (f.custom && f.spec) {
+        const sp = f.spec;
+        k = CAT_LAW[sp.cat];
+        const size = clamp(sp.amount / 3, 0.5, 2);
+        d = { fund: 0.15, program: 0.2, regulate: 0.2, restrict: 0.2, taxcredit: 0.15, deregulate: -0.2 }[sp.mech] * size;
+        if (sp.mech === "taxcredit" && ["industry", "jobs"].includes(sp.cat)) k = "corp_incentives";
+        if (sp.cat === "trade" && ["taxcredit", "deregulate"].includes(sp.mech)) d = -Math.abs(d);
+        if (sp.cat === "environment" && ["fund", "program"].includes(sp.mech)) k = "protected";
+    }
+    if (!k || !G.policies[k] || !d) return;
+    const p = G.policies[k];
+    const before = p.level;
+    p.level = Math.round(clamp(before + d, 0, 1) * 100) / 100;
+    if (before === 0 && p.level > 0) p.level = Math.max(p.level, 0.2);
+    if (p.level !== before) report(`📚 Lawbook updated: ${POLICIES[k].name}`, `The ${b.title} ${before === 0 ? "puts" : d > 0 ? "strengthens" : "weakens"} ${POLICIES[k].name} ${before === 0 ? "into law" : ""} — now ${levelWord(p.level)} (${Math.round(p.level * 100)}%).`);
+}
+
+
+// ── Connecting the dots: packages build real infrastructure ───────
+
+const PKG_INFRA = { rail: ["transit", 25], skylanes: ["transit", 15], spaceport: ["spaceport", 25], rural: ["transit", 10], freight: ["spaceport", 10],
+    schools: ["schools", 0.3], academies: ["schools", 0.1], rural_schools: ["schools", 0.15], hospitals: ["medcenters", 0.3], clinics: ["medcenters", 0.2], eldercare: ["medcenters", 0.1],
+    towers: ["housing", 0.3], renewal: ["housing", 0.15], settlements: ["housing", 0.15], fusion: ["grid", 25], vaporators: ["grid", 15], grid: ["grid", 25], solar: ["grid", 10],
+    shield: ["defence", 30], platforms: ["defence", 30], bunkers: ["defence", 10], militia: ["defence", 10] };
+
+function pkgUnits(compKey) {
+    const m = PKG_INFRA[compKey];
+    if (!m) return null;
+    const [key, amt] = m;
+    const x = INFRA.find(i => i.key === key);
+    return { key, units: x.pct ? amt : Math.max(1, Math.round(infraNeed(key).need * amt)), x };
+}
+
+// Called when a package component opens. Its stat effect is already applied; this updates the counters.
+function packageInfra(compKey, pkgTitle) {
+    const u = pkgUnits(compKey);
+    if (!u) return;
+    const inf = initInfra()[u.key];
+    inf.have = Math.min(inf.need, inf.have + u.units);
+    report(`🏗️ ${u.x.name}: ${infraText(u.x, infraNeed(u.key))}`, `Thanks to the ${pkgTitle}.`);
+}
+
+function packageInfraComing(key) {
+    return (G.packages || []).filter(p => p.status === "active").reduce((s, p) => s + p.schedule.filter(c => !c.done).reduce((t, c) => { const u = pkgUnits(c.key); return t + (u && u.key === key ? u.units : 0); }, 0), 0);
+}
+
+
+// ── Homegrown companies ───────────────────────────────────────────
+
+const LOCAL_NOUN = { shipyards: "Starworks", droids: "Droidworks", mining: "Mining Cooperative", agri: "Growers' Collective", finance: "Savings & Loan", tourism: "Tours & Hospitality",
+    biotech: "Biolabs", energy: "Power & Light", logistics: "Freight Lines", tech: "Datasystems", arms: "Arms Works" };
+const LOCAL_SUPPORT = {
+    grant: { name: "Startup grant", cost: 1, note: "1B, no strings. The founders keep everything." },
+    loan:  { name: "Development-bank loan", cost: 2, note: "2B lent at low interest, repaid over ten years — if the company survives." },
+    coop:  { name: "Worker cooperative", cost: 0.8, note: "0.8B to set it up as a co-op. Profits shared by the workers; grows slower." },
+    stake: { name: "Public stake", cost: 1.5, note: "1.5B for a share of the company. The treasury earns dividends; business grumbles." }
+};
+
+function localReady(k) {
+    const s = sectorSuit(k);
+    if (s.m < 0.35) return { ok: false, why: `nothing like it could work here: ${s.why}` };
+    if (sectorStr(k) < 15) return { ok: false, why: "no local entrepreneurs are ready yet — build up the industry first (public investments, training)" };
+    if ((G.firms || []).filter(f => f.localCo && f.sector === k && !f.failed).length >= 2) return { ok: false, why: "local investors are already stretched in this industry" };
+    return { ok: true };
+}
+
+function planLocal(k) {
+    const r = localReady(k);
+    if (!r.ok) return toast("No local company ready", r.why.replace(/^./, c => c.toUpperCase()) + ".");
+    if (!spendAP(2)) return;
+    const founder = randomName(G.worldKey, pick(world().species));
+    G.localPlan = { sector: k, name: `${world().name} ${LOCAL_NOUN[k]}`, founder, jobs: Math.round((1200 + sectorStr(k) * 40) * (0.8 + attr("population") * 0.1) / 100) * 100, support: "loan" };
+    report(`${SECTORS[k].icon} ${founder} has a plan`, `${founder} wants to build ${G.localPlan.name} — about ${G.localPlan.jobs.toLocaleString()} jobs, all local. They need backing.`);
+    render();
+}
+
+function localOdds(p = G.localPlan) {
+    const fit = sectorFit(p.sector), suit = sectorSuit(p.sector);
+    return Math.round(clamp(40 + (suit.m - 1) * 40 + sectorStr(p.sector) * 0.4 - fit.gaps.length * 12 + (p.support === "coop" ? -5 : p.support === "stake" ? 5 : 0) + (skill("economy") - 3) * 5, 10, 92));
+}
+
+function launchLocal() {
+    const p = G.localPlan;
+    if (!p || !spendAP(3)) return;
+    const sup = LOCAL_SUPPORT[p.support];
+    G.firms = G.firms || [];
+    G.firms.push({ firm: p.name, founder: p.founder, sector: p.sector, jobs: p.jobs, local: p.jobs, opens: monthsNow() + 6, taxFrom: monthsNow() + 6, open: false, localCo: true, support: p.support, odds: localOdds(p) });
+    if (p.support === "grant") addStream(`Startup grant: ${p.name}`, -sup.cost / 12, 12);
+    if (p.support === "loan") { G.treasury -= sup.cost; addStream(`Loan repayments: ${p.name}`, sup.cost * 1.25 / 120, 120); G.streams[G.streams.length - 1].wait = 12; G.streams[G.streams.length - 1].loanOf = p.name; }
+    if (p.support === "coop") { addStream(`Co-op setup: ${p.name}`, -sup.cost / 12, 12); applyEffects({ g: { unions: 4, workers: 3 }, f: { reformers: 3 } }); G.base.inequality -= 1; }
+    if (p.support === "stake") { G.treasury -= sup.cost; addStream(`Dividends: ${p.name}`, sup.cost * 0.12 / 12, 240); G.streams[G.streams.length - 1].wait = 18; applyEffects({ g: { business: -2 }, f: { reformers: 2, corporatists: -2 } }); }
+    initSectors()[p.sector].str = clamp(G.sectors[p.sector].str + 8);
+    G.record.agreements.push(`Backed ${p.name}, a homegrown company (${eraYear(currentBBY())})`);
+    report(`🌱 ${p.name} is founded`, `${p.founder}'s company opens in six months with ${p.jobs.toLocaleString()} local jobs. Profits stay on ${world().name}.`, applyEffects({ g: { workers: 2, business: 2 }, trust: 2 }));
+    G.localPlan = null;
+    render();
+}
+
+function expandLocal(i) {
+    const f = (G.firms || [])[i];
+    if (!f || !f.open || f.failed) return;
+    if (!spendAP(3)) return;
+    G.treasury -= 0.8;
+    f.jobs = Math.round(f.jobs * 1.4 / 100) * 100; f.local = f.jobs;
+    G.base.employment += f.jobs * 0.4 / 3500;
+    initSectors()[f.sector].str = clamp(G.sectors[f.sector].str + 5);
+    report(`📈 ${f.firm} expands`, `An expansion loan of 0.8B. ${f.firm} now employs ${f.jobs.toLocaleString()}.`);
+    render();
+}
+
+// Once a year, homegrown companies grow — or struggle.
+function tickLocalFirms() {
+    if (G.month !== 6) return;
+    (G.firms || []).filter(f => f.localCo && f.open && !f.failed).forEach(f => {
+        const roll = rnd(0, 100), odds = localOdds({ sector: f.sector, support: f.support });
+        if (roll < odds * 0.35) {
+            const add = Math.round(f.jobs * 0.2 / 100) * 100;
+            f.jobs += add; f.local = f.jobs; G.base.employment += add / 3500;
+            G.sectors[f.sector].str = clamp(G.sectors[f.sector].str + 3);
+            report(`🌱 ${f.firm} is growing`, `${add.toLocaleString()} new jobs this year. ${f.founder} credits your government's early backing.`);
+        } else if (roll > 100 - (100 - odds) * 0.25) {
+            f.failed = true; f.open = false;
+            G.base.employment -= f.jobs / 2500;
+            G.streams = G.streams.filter(s => s.loanOf !== f.firm);
+            report(`📉 ${f.firm} collapses`, `${f.jobs.toLocaleString()} jobs are lost.${f.support === "loan" ? " Its development-bank loan will never be repaid." : ""} ${sectorFit(f.sector).gaps.length ? "It never found the skilled workers or infrastructure it needed." : "Hard times."}`, applyEffects({ g: { workers: -3 }, trust: -2 }));
+        }
+    });
+}
+
+
+// ── The stars move ────────────────────────────────────────────────
+
+// Live world attributes: the economy you build changes your world's standing.
+function liveAttr(k, base) {
+    if (!G.econ0 || !G.sectors || !G.infra) return base;
+    const e0 = G.econ0;
+    const firms = (G.firms || []).filter(f => f.open && !f.failed);
+    if (k === "wealth") {
+        const localJobs = firms.filter(f => f.localCo).reduce((s, f) => s + f.jobs, 0);
+        const offJobs = firms.filter(f => !f.localCo).reduce((s, f) => s + f.jobs, 0);
+        return base + (G.planet.employment - e0.emp) / 12 + offJobs / 60000 + localJobs / 25000 - Math.max(0, -G.treasury - 20) / 40;
+    }
+    if (k === "resources") return base + Math.min(1, Math.max(0, sectorStr("mining") - (e0.str.mining || 0)) / 60 + (G.sectors.mining.assets.includes("refinery") ? 0.3 : 0));
+    if (k === "vulnerability") {
+        const def = (G.infra.defence ? G.infra.defence.have : 0) - (e0.defence != null ? e0.defence : (G.infra.defence ? G.infra.defence.have : 0));
+        const shields = (G.policies.shield_gen ? G.policies.shield_gen.eff : 0) + (G.policies.orbital_def ? G.policies.orbital_def.eff : 0);
+        return base - def / 35 - shields;
+    }
+    return base;
 }

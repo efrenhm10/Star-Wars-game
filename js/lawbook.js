@@ -233,9 +233,9 @@ function projectBudget(d = G.pbudget.draft) {
     let spend = 0;
     Object.entries(G.policies).forEach(([k, p]) => {
         const def = POLICIES[k];
-        if (def.cat === "tax") { const lv = d && d.taxes[k] != null ? d.taxes[k] : p.level; income += -def.cost * lv * 12; return; }
+        if (def.cat === "tax") { const lv = d && d.taxes[k] != null ? d.taxes[k] : p.level; income += -def.cost * lv * 12 * taxBaseM(k); return; }
         const c = def.cost * p.level * 12;
-        if (c < 0) { income -= c; return; }
+        if (c < 0) { income -= c * taxBaseM(k); return; }
         const m = d && d.cats[def.cat] != null ? d.cats[def.cat] : fundMult(def.cat);
         lines[def.cat] = (lines[def.cat] || 0) + c * m;
         spend += c * m;
@@ -525,7 +525,8 @@ function taxInfo(k) {
     const fans = Object.entries(def.g || {}).filter(([g, v]) => v > 0 && G.groups[g] && G.groups[g].w > 0).map(([g]) => GROUPS[g].name.toLowerCase());
     const side = Object.entries(def.fx || {}).map(([st, v]) => `${v > 0 ? "raises" : "lowers"} ${PLANET_STATS[st].name.toLowerCase()}`);
     return `<p class="small">${esc(TAX_DESC[k] || "A source of planetary revenue.")}</p>
-        <p class="small muted">At 100% it would raise about ${(-def.cost * 12).toFixed(1)}B a year.${payers.length ? ` Hits: ${esc(payers.join(", "))}.` : ""}${fans.length ? ` Popular with: ${esc(fans.join(", "))}.` : ""}${side.length ? ` Side effects: ${side.join(", ")}.` : ""}</p>`;
+        ${(() => { const tb = taxBase(k); return `<p class="small"><b>Tax base: ${tb.m.toFixed(2)}×</b> ${tb.why.length ? `— ${esc(tb.why.join(", "))}` : "— unchanged since you took office"}.</p>`; })()}
+        <p class="small muted">At 100% it would raise about ${(-def.cost * 12 * taxBaseM(k)).toFixed(1)}B a year.${payers.length ? ` Hits: ${esc(payers.join(", "))}.` : ""}${fans.length ? ` Popular with: ${esc(fans.join(", "))}.` : ""}${side.length ? ` Side effects: ${side.join(", ")}.` : ""}</p>`;
 }
 
 function budgetView() {
@@ -539,7 +540,7 @@ function budgetView() {
     const statusText = { adopted: "The budget is in force for this fiscal year.", drafting: "Budget season: draft next year's budget and submit it before Month 12.", submitted: "Your budget is before the legislature.", passed: "Next year's budget has passed. It takes effect in January.", rejected: "The legislature rejected your budget. Revise and resubmit.", continuing: "No budget passed: the government is running under a continuing resolution." }[pb.status];
     const catRows = SPEND_CATS.filter(c => pr.lines[c] || d.cats[c] !== 1).map(c => `<tr><td>${POLICY_CATS[c].name}</td><td class="num">${(pr.lines[c] || 0).toFixed(1)}B</td><td>${editable ? `<span class="stepper"><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="-0.1" ${(d.cats[c] || 1) <= 0.71 ? "disabled" : ""}>−</button><b>${Math.round((d.cats[c] || 1) * 100)}%</b><button class="mini" data-act="pbstep" data-f="cat:${c}" data-d="0.1" ${(d.cats[c] || 1) >= 1.29 ? "disabled" : ""}>+</button></span>` : `${Math.round((d.cats[c] || 1) * 100)}%`}</td></tr>
         <tr class="detail"><td colspan="3"><details><summary class="small muted">What's in it</summary>${Object.entries(POLICIES).filter(([k, def]) => def.cat === c && G.policies[k].level > 0 && def.cost > 0).map(([k, def]) => `<div class="statrow small"><span>${def.icon} ${esc(def.name)} (${levelWord(G.policies[k].level)})</span><b>${(def.cost * G.policies[k].level * 12 * (d.cats[c] || 1)).toFixed(1)}B</b></div>`).join("")}</details></td></tr>`).join("");
-    const taxRows = Object.entries(d.taxes).map(([k, lv]) => `<tr><td><details class="taxinfo"><summary>${POLICIES[k].icon} ${esc(POLICIES[k].name)}</summary>${taxInfo(k)}</details></td><td class="num">${(-POLICIES[k].cost * lv * 12).toFixed(1)}B</td><td>${editable ? `<input type="range" min="5" max="100" step="5" value="${Math.round(lv * 100)}" data-pb="tax:${k}"> ${Math.round(lv * 100)}%` : `${Math.round(lv * 100)}%`}</td></tr>`).join("");
+    const taxRows = Object.entries(d.taxes).map(([k, lv]) => `<tr><td><details class="taxinfo"><summary>${POLICIES[k].icon} ${esc(POLICIES[k].name)}</summary>${taxInfo(k)}</details></td><td class="num">${(-POLICIES[k].cost * lv * 12 * taxBaseM(k)).toFixed(1)}B${taxBaseM(k) !== 1 ? `<br><span class="small ${taxBaseM(k) > 1 ? "c-for" : "c-against"}">base ${taxBaseM(k).toFixed(2)}×</span>` : ""}</td><td>${editable ? `<input type="range" min="5" max="100" step="5" value="${Math.round(lv * 100)}" data-pb="tax:${k}"> ${Math.round(lv * 100)}%` : `${Math.round(lv * 100)}%`}</td></tr>`).join("");
     return `<div class="era-banner"><b>THE ${esc(eraYear(["drafting", "rejected", "submitted", "passed"].includes(pb.status) ? currentBBY() - 1 : currentBBY()))} BUDGET</b> · ${esc(statusText)}</div>
         <div class="cols"><div class="col-main">
         ${panel("💰 Operating budget", `<table class="results"><tr><th>Department</th><th>Per year</th><th>Funding</th></tr>${catRows}</table>

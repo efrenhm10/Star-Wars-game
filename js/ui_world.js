@@ -301,7 +301,8 @@ function viewGalaxy() {
         ${statRow("Independence support", `${Math.round(s.indep)}%`, s.indep, "bad")}
         ${sen ? `<div class="mini-npc">${renderPortrait(sen.app, 44)}<div><b>${esc(sen.name)}</b><br><span class="small muted">${esc(sen.title)} · ${FACTIONS[sen.faction].name}</span> ${relBadge(sen.rel)}</div></div>` : s.senatorId === "player" ? "<p>You represent this world.</p>" : ""}
         ${sel === G.worldKey ? `<h4>Your world's attributes (live)</h4>${Object.entries(ATTRIBUTES).map(([k, a]) => `<div class="statrow small"><span>${a.name}</span>${stars(attr(k))}</div>`).join("")}` : ""}
-        ${sel !== G.worldKey && !s.destroyed ? tact("visit", "🚀 State visit", 3, "Improves relations with its senator.", `data-key="${sel}"`) : ""}`);
+        ${sel !== G.worldKey && !s.destroyed ? tact("visit", "🚀 State visit", 3, "Improves relations with its senator.", `data-key="${sel}"`) : ""}
+        ${sel !== G.worldKey && !s.destroyed && governing() ? tact("visittrade", "🤝 Travel to establish trade", 3, (() => { const m = tradeMatch(G.worldKey, sel); return tradeBlocked(sel) ? tradeBlocked(sel) : `0.5M. They'd buy: ${m.sell.map(g => GOODS[g].name.toLowerCase()).join(", ") || "nothing yet"} · you'd buy: ${m.buy.map(g => GOODS[g].name.toLowerCase()).join(", ") || "nothing"}.`; })(), `data-key="${sel}"`, !!tradeBlocked(sel)) : ""}`);
     const galStats = Object.entries(GAL_STATS).map(([k, d]) => statRow(`${d.icon} ${d.name}`, Math.round(G.gal[k]), G.gal[k], d.bad ? "bad" : "good")).join("")
         + (["empire", "rebellion"].includes(G.era) ? statRow("✊ Rebellion strength", Math.round(G.rebellion), G.rebellion, "good") : "")
         + statRow("🏦 Republic corruption", Math.round(G.repCorruption), G.repCorruption, "bad");
