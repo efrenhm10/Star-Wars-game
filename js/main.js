@@ -215,7 +215,7 @@ function boot() {
     $("#continueBtn").addEventListener("click", () => {
         if (loadGame() && G.record) {
             // Bring older saves up to date.
-            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {}; initEmpireState(); initLawbook(); initTrade();
+            G.issues = G.issues || []; G.laws = G.laws || []; G.completedBills = G.completedBills || {}; initEmpireState(); initLawbook(); initTrade(); if (G.worldKey && G.planet) initDemo();
             if (world().special && G.assembly == null && G.lendingRate == null && G.intel == null && G.food == null && G.corpPower == null) initSpecial();
             view = "office"; showScreen("play"); render();
         }

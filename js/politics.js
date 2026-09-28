@@ -294,6 +294,7 @@ function tickYear() {
         G.family.spouse.alive = false;
         report("A death in the family", `Your spouse, ${G.family.spouse.name}, has died. The capital sends condolences; your rivals send flowers.`, applyEffects({ health: -8, g: { elders: 2, religious: 2 } }));
     }
+    tickDemo();
     log(`Year ${G.year} begins. Approval ${Math.round(approval())}%, influence ${Math.round(G.influence)}, unrest ${Math.round(G.unrest)}.`, "year");
 }
 

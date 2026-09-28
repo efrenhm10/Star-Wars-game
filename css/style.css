@@ -536,3 +536,15 @@ details.taxinfo summary { cursor: pointer; }
 details.taxinfo[open] summary { font-weight: 600; }
 details.taxinfo p { margin: 4px 0; max-width: 520px; }
 .money-line { padding: 6px 10px; border-left: 3px solid var(--accent2); background: rgba(240, 180, 41, .07); font-size: .88rem; margin: 6px 0 10px; }
+
+/* Population & demographics */
+.demo-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 8px; }
+.demo-big { font-size: 1.9em; font-weight: 700; line-height: 1.1; }
+.demo-growth { text-align: right; }
+.demo-ages { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin: 8px 0 4px; background: rgba(127,127,127,.2); }
+.demo-ages i { display: block; height: 100%; }
+.demo-ages .kids { background: #6fb7e0; }
+.demo-ages .work { background: #7ac27a; }
+.demo-ages .old { background: #d9a85a; }
+.panel.demo h4 { margin: 12px 0 4px; }
+.panel.demo .statrow.small { gap: 8px; flex-wrap: wrap; }

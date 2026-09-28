@@ -370,6 +370,27 @@ before committees, refusing him and speaking out all raise your **danger**
   to keep your world's autonomy, collaborate publicly while resisting
   privately, or join the underground.
 
+## Population & demographics
+
+The **Public** tab opens with a census of your world, for every role: a real
+headcount (about a trillion on Coruscant, 1.3 billion on Rodia, 200,000 on
+Tatooine), its species mix, urban vs rural share, median age, and age
+structure (children, working age, elders).
+
+- **Life and death.** Births, deaths, infant mortality, life expectancy and
+  net migration, with yearly totals ("≈ 52 million babies a year"). Each
+  figure has a one-line reason, e.g. "pushed up by poverty, poor schooling ·
+  held down by a housing shortage".
+- **Hardship.** The share and number of people below the poverty line,
+  unemployed, without adequate housing, and literacy.
+- **Driven by everything else.** The numbers come from healthcare,
+  schooling, jobs, housing, crime, prosperity, welfare and refugee laws,
+  border controls, war, sieges and occupation. Wookiees and Muuns live much
+  longer lives.
+- **The census pushes back.** Every New Year the population moves. Fast
+  growth strains housing, deep poverty feeds crime and unrest, and emigration
+  empties jobs. Arrows compare today's conditions with the last census.
+
 ## Code layout
 
 | File | Contents |
@@ -393,6 +414,7 @@ before committees, refusing him and speaking out all raise your **danger**
 | `js/trade.js` | Goods, trading partners, agreements, disputes |
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
+| `js/demographics.js` | Population, births and deaths, migration, poverty and hardship, the yearly census |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |
 | `js/ui.js`, `js/ui_world.js`, `js/ui_issues.js`, `js/main.js` | Interface and input |

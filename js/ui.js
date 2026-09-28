@@ -495,6 +495,7 @@ function viewPublic() {
         <div class="row"><span class="muted small">Reaches ${o.audience.map(a => GROUPS[a].name.toLowerCase()).join(", ")}</span><button class="mini" data-act="interview" data-key="${o.key}" ${G.ap < 3 ? "disabled" : ""}>Interview</button></div></div>`).join("");
     const news = G.news.slice(0, 12).map(n => `<div class="headline ${n.good ? "good" : "bad"}"><b>${esc(n.outlet)}</b>${esc(n.text)} <span class="muted small">${n.date}</span></div>`).join("") || `<p class="muted">No coverage yet.</p>`;
     return `<div class="cols"><div class="col-main">
+        ${demographicsPanel()}
         ${panel("Constituencies", `<p class="muted small">“The people” is not one number. Each group judges you on the conditions they care about — and on what you do.</p><div class="table-wrap"><table><tr><th>Group</th><th>Share</th><th>Approval</th><th></th></tr>${rows}</table></div>`)}
         ${panel("📰 The competing narratives", news)}
     </div><div class="col-side">
