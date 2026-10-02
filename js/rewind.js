@@ -26,7 +26,6 @@ function saveCheckpoint(why) {
 function restoreCheckpoint(id) {
     const cp = loadCheckpoints().find(c => c.id === id);
     if (!cp) return toast("Checkpoint missing", "That checkpoint is no longer stored on this device.");
-    if (!confirm(`Rewind to ${cp.label}? Everything since then will be undone.`)) return;
     G = cp.data.G;
     npcCounter = cp.data.npcCounter || npcCounter;
     G.scenes = [];
@@ -49,13 +48,20 @@ function lastGovSpec() {
 }
 
 function canRewindBeforeEmpire() {
-    return currentBBY() < 20 && !G.rewoundEmpire && !!lastGovSpec() && !(GOV_KINDS.includes(G.office.kind) && !isEmpireEra());
+    return currentBBY() < 20 && !G.rewoundEmpire;
 }
 
-function rewindBeforeEmpire() {
-    const spec = lastGovSpec();
+// Offices you can return to: your last one first, then the world's other governing roles.
+function rewindRoles() {
+    const last = lastGovSpec();
+    const roles = world().roles.filter(r => GOV_KINDS.includes(r.kind)).map(r => ({ ...r }));
+    if (last && !roles.some(r => r.title === last.title)) roles.unshift(last);
+    return roles.sort((a, b) => (last && b.title === last.title ? 1 : 0) - (last && a.title === last.title ? 1 : 0));
+}
+
+function rewindBeforeEmpire(title) {
+    const spec = rewindRoles().find(r => r.title === title) || rewindRoles()[0];
     if (!spec) return;
-    if (!confirm(`Go back to 20 BBY — one year before the Empire — as ${spec.title}? Your planet, treasury, laws and relationships stay as they are now; the Empire and everything since is undone.`)) return;
     const yearsBack = G.year - 13;
     G.year = 13; G.month = 5;
     G.age -= yearsBack;
@@ -80,6 +86,10 @@ function rewindBeforeEmpire() {
     if (pal) { pal.alive = true; pal.title = "Supreme Chancellor"; pal.influence = 85; pal.arena = "senate"; G.chancellorId = pal.id; }
     if (G.demo) G.demo.hist = G.demo.hist.filter(h => h.year <= 13);
     G.health = Math.max(G.health, 70);
+    // Undo the Empire's tithes and the deficits run up while you were gone.
+    const t0 = G.treasury;
+    G.treasury = G.treasuryAtEmpire != null ? Math.max(G.treasury, G.treasuryAtEmpire) : Math.max(G.treasury, 0);
+    if (G.treasury > t0) log(`⏪ The Imperial debt is undone: treasury ${t0.toFixed(1)}B → ${G.treasury.toFixed(1)}B.`, "career");
     G.scenes = [];
     setOffice(makeOffice({ ...spec, fresh: true }));
     G.rewoundEmpire = true;
@@ -94,7 +104,11 @@ function rewindBeforeEmpire() {
 function rewindPanel() {
     const list = loadCheckpoints().filter(c => c.name === G.name);
     const rows = list.map(c => `<div class="haven"><div><b>${esc(c.label)}</b><p class="small muted">${esc(c.why)}</p></div><button class="mini" data-act="restorecp" data-k="${c.id}">Rewind</button></div>`).join("");
-    const rescue = canRewindBeforeEmpire() ? `<div class="haven"><div><b>20 BBY — a year before the Empire</b><p class="small">Back in office as <b>${esc(lastGovSpec().title)}</b>. Your planet, treasury, laws and relationships stay as they are now; the Empire, your arrest and everything since are undone. Once per career.</p></div><button class="mini" data-act="rewindempire">Go back</button></div>` : "";
+    const last = lastGovSpec();
+    const rescue = canRewindBeforeEmpire() ? `<h4>Go back to 20 BBY — a year before the Empire</h4><p class="small">Your planet, treasury, laws and relationships stay as they are now; the Empire, any arrest and everything since are undone. Pick the office to return to:</p>`
+        + rewindRoles().map(r => `<div class="haven"><div><b>${esc(r.title)}</b>${last && r.title === last.title ? ' <span class="hint up">your last office</span>' : ""}</div><button class="mini" data-act="rewindempire" data-k="${esc(r.title)}">⏪ Go back</button></div>`).join("") : "";
     if (!rows && !rescue) return panel("⏪ Rewind", `<p class="muted small">A checkpoint is saved every New Year and just before an arrest. They'll appear here.</p>`);
     return panel("⏪ Rewind", `<p class="small">Checkpoints are saved every New Year and just before an arrest (up to six, on this device).</p>${rescue}${rows}`);
 }
+
+HISTORY.push({ bby: 19, m: 5, id: "empire_ledger", run: () => { G.treasuryAtEmpire = G.treasury; } });

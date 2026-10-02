@@ -88,6 +88,7 @@ function renderHud() {
             <div class="term">${esc(ERAS[G.era].name)}</div>
             <div class="term">${o.termLeft != null ? `Term: ${termLeftLabel()}` : KIND_INFO[o.kind].label}</div>
             <button id="endMonth" class="primary" ${G.scenes.length ? "disabled" : ""}>End Month ▸</button>
+            <button class="mini rewind-btn" data-act="view" data-v="archive">⏪ Rewind</button>
         </div>`;
 }
 

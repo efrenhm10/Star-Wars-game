@@ -59,7 +59,7 @@ const ACTIONS = {
     raisehome: () => raiseHome(),
     declarerevolt: () => declareRevolt(),
     restorecp: d => restoreCheckpoint(+d.k),
-    rewindempire: () => rewindBeforeEmpire(),
+    rewindempire: d => rewindBeforeEmpire(d.k),
     probe: d => probeChancellor(d.t),
     govtab: d => { ui.govTab = d.t; render(); },
     lawpick: d => { ui.govTab = "web"; ui.policy = `p:${d.key}`; render(); },
