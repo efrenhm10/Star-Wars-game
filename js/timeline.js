@@ -98,7 +98,7 @@ function tickOpinion() {
 function defenseStrength() {
     const w = world();
     const pol = G.policies;
-    let d = w.ratings.military * 7 + pol.defence_force.eff * 35 + G.garrison + (G.fortify || 0);
+    let d = w.ratings.military * 7 + pol.defence_force.eff * 35 + G.garrison + (G.fortify || 0) + forcesBonus();
     Object.entries(POLICIES).forEach(([k, def]) => { if (def.defense && pol[k]) d += def.defense * pol[k].eff; });
     if (pol.conscription) d += pol.conscription.eff * 25 + pol.martial_law.eff * 10;
     if (/Military|Royal|Clan|KDY|Guard/i.test(G.const.militaryControl)) d += 6;
@@ -333,6 +333,7 @@ const HISTORY = [
         if (G.allegiance === "hutt") return;
         if (G.opinion.sep >= 25 || w.canonAlign !== "republic" || G.allegiance === "neutral") frontScene("hist_allegiance", {});
     } },
+    { bby: 22, m: 7, id: "war_footing", run: () => { if (governing() || G.office.kind === "council") { initForces(); pushScene("mobilize", {}); } } },
     { bby: 21, m: 2, id: "christophsis", run: () => { G.galaxy.christophsis.stability = clamp(G.galaxy.christophsis.stability - 20); report("⚔️ Battle of Christophsis", "Republic forces break a Separatist blockade of Christophsis."); } },
     { bby: 21, m: 4, id: "ryloth", run: () => {
         if (G.worldKey === "ryloth") { if (G.allegiance !== "separatist") startSiege("Separatist", 70, true, "Separatist forces under Wat Tambor invade Ryloth. The droid army is burning villages."); return; }
@@ -731,6 +732,8 @@ Object.assign(SCENES, {
             { label: "Attempt to preserve planetary autonomy", hint: "Negotiate special status for your world.", go: () => imperialPath("autonomy") },
             { label: "Collaborate publicly, resist privately", hint: "Serve the Empire — and secretly help its enemies.", go: () => imperialPath("double") });
         choices.push({ label: "Break with the Empire: go underground", hint: "Leave office entirely. You become a fugitive running rebel cells.", go: () => imperialPath("rebel") });
+        if (havens().length) choices.push({ label: "🚀 Flee to a world that's still fighting", hint: havens().map(h => worldName(h.key)).join(", ") + ".", go: () => { G.imperial = { path: "rebel" }; frontScene("flee_pick", {}); } });
+        if (inOffice && !governing() && G.office.kind !== "council") choices.push({ label: `✊ Go home and raise ${world().name} against the Empire`, hint: "Lead the partisans. Build an army. Liberate your world.", go: () => { G.imperial = { path: "rebel" }; raiseHome(true); } });
         if (!inOffice) choices.push({ label: "Keep your head down", go: () => imperialPath("quiet") });
         return { tag: "19 BBY — THE END OF THE REPUBLIC", title: "The Republic has been reorganised into the First Galactic Empire", body, choices };
     },
@@ -839,6 +842,7 @@ function changeAllegiance(side, how) {
 function imperialPath(path) {
     const w = world();
     const k = G.office.kind;
+    const wasGov = governing() || k === "council";
     const pal = canonNpc("palpatine");
     G.imperial = { path };
     if (path === "accept") {
@@ -869,6 +873,7 @@ function imperialPath(path) {
         if (pal) changeRel(pal, -30, "Declared a resistance government against the Empire.");
         report("✊ A resistance government", `${w.name} refuses the Empire. Your government will not dissolve, will not surrender, and will not be silent. The Empire's answer is coming.`, applyEffects({ legitimacy: 10, f: { reformers: 8, independence: 8, militarists: -6, centralists: -10 }, g: { youth: 6, military: 3 } }));
         G.record.agreements.push(`Declared ${w.name} in open resistance to the Empire (${eraYear(currentBBY())})`);
+        afterImperialPath(path, wasGov);
         return;
     } else if (path === "rebel") {
         const wasOffice = G.office.title;
@@ -881,6 +886,7 @@ function imperialPath(path) {
         report("Underground", "You leave formal government and disappear into the resistance.", applyEffects({ f: { reformers: 10, independence: 6, militarists: -10 }, heat: 20 }));
         G.record.agreements.push(`Joined the resistance to the Empire (${eraYear(currentBBY())})`);
     }
+    afterImperialPath(path, wasGov);
     if (G.signed2000 && path !== "rebel" && chance(path === "resist" ? 45 : 20)) {
         G.record.arrests.push(eraYear(currentBBY()));
         report("Arrested", "The Imperial Security Bureau comes for the signatories of the Petition of the 2,000. You are one of them.");

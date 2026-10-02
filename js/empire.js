@@ -351,7 +351,9 @@ function tickRevolt() {
 
 function goUndergroundFromRevolt() {
     const title = G.office.title;
+    forcesDefect(0.3);
     startUnderground(true);
+    G.ug.base = G.worldKey;
     G.allegiance = "rebel";
     enterOutsider("Rebel Organizer");
     G.office.title = `Leader of the ${world().name} government-in-exile`;
@@ -366,6 +368,7 @@ function empirePanels() {
     let out = "";
     if (G.revolt && governing()) out += revoltPanel();
     if (canProbe()) out += probePanel();
+    out += resistancePanels();
     if (palAlive() && !isUnderground() && !inImperialPrison() && (danger() >= 15 || canProbe() || isEmpireEra() || ["senate", "gov"].includes(roleCat()))) out += safetyPanel();
     return out;
 }
@@ -748,6 +751,6 @@ function tickEmpire() {
     if (d >= 50 && t.colleague == null && chance(12)) { t.colleague = now; pushScene("emp_colleague", {}); return; }
     const killingEra = currentBBY() <= 22 || isEmpireEra();
     if (d >= 55 && killingEra && now - (t.attempt == null ? -99 : t.attempt) > 10 && chance((d - 40) / 3)) { t.attempt = now; pushScene("emp_assassin", { kind: pick(["kouhun", "speeder", "sniper", "poison"]) }); return; }
-    if (isEmpireEra() && d >= 65 && now - (t.knock == null ? -99 : t.knock) > 12 && chance((d - 55) / 5)) { t.knock = now; pushScene("emp_knock", {}); return; }
+    if (isEmpireEra() && !(G.revolt && G.revolt.stage !== "occupied") && d >= 65 && now - (t.knock == null ? -99 : t.knock) > 12 && chance((d - 55) / 5)) { t.knock = now; pushScene("emp_knock", {}); return; }
     if (isEmpireEra() && G.jediHidden && chance(1.5)) { G.jediHidden = false; G.isb = (G.isb || 0) + 25; report("They know", "A neighbour remembers the young stranger in your storeroom. The ISB opens a file."); }
 }

@@ -391,6 +391,49 @@ structure (children, working age, elders).
   growth strains housing, deep poverty feeds crime and unrest, and emigration
   empties jobs. Arrows compare today's conditions with the last census.
 
+## Fighting the Empire
+
+When the Empire comes, the game becomes a war, whatever your role.
+
+- **An army you can count.** Planetary governments see their troops,
+  reserves, warships and starfighters, plus readiness and morale. When the
+  Clone Wars start you choose how far to mobilise. Calling up the reserves
+  pulls workers out of the economy and costs the treasury, but defence
+  strength rises. You can also recruit, train, order warships and
+  starfighters, and visit the troops. Accept the Empire and it takes most of
+  your army.
+- **Battles fought in turns.** You pick a tactic (full assault, flank, hit
+  and run, Alliance support; or line of battle, starfighter strike, hyperspace
+  raid, asteroid-field ambush) with the odds shown. Then the battle turns
+  (AT-ATs break through, a second Star Destroyer arrives, a pilot volunteers
+  for a suicide run) and you decide again. Afterwards you see the dead on both
+  sides, by name where it matters.
+- **Make your world a resistance planet.** Governors can declare open revolt
+  at any time, mobilise, and fight blockades and landing forces themselves.
+  Senators and other non-governing roles can go home and raise their world.
+  You lead the partisans, build an army and fight the liberation battle. If
+  you win, you become president of a free world, and the Empire comes back
+  with more ships.
+- **Flee to a world that's still fighting.** Onderon's partisans, the Wookiee
+  Shadowlands and Free Ryloth are available from 19 BBY; later Lothal, Jedha,
+  Mon Cala and Echo Base on Hoth, plus any world you've freed. First you have
+  to get past the ISB at the spaceport. Local fighters join you there.
+- **The war room.** Raid garrisons, ambush convoys, strike orbital outposts,
+  join Alliance operations, liberate neighbouring worlds and defend them when
+  the Empire strikes back. A meter shows the Empire's grip on the sector.
+- **A spy network.** Agents with skills run missions: steal codes or troop
+  movements, sabotage factories, plant a mole in the Moff's office, rescue
+  prisoners, turn an Imperial officer, expose the Moff, slice the HoloNet.
+  Partway through, an agent may report they're blown, and you choose whether
+  they finish the job.
+- **The war council.** Every few months a problem lands on your desk:
+  patrols, convoys, defectors who might be ISB plants, villages facing
+  reprisals, arms dealers, hotheads who want to bomb a café street, prisoners,
+  the wounded, deserters, an Alliance that needs your ships, the Empire
+  finding your base. Senators who stay and fight from inside get their own:
+  clearance codes for a courier, leaked troop movements, smuggling on a
+  diplomatic ship, an ISB plant on the staff.
+
 ## Code layout
 
 | File | Contents |
@@ -414,6 +457,7 @@ structure (children, working age, elders).
 | `js/trade.js` | Goods, trading partners, agreements, disputes |
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
+| `js/rebellion.js` | Armed forces and mobilisation, turn-based battles, espionage, resistance worlds and fleeing, liberation, the war council |
 | `js/demographics.js` | Population, births and deaths, migration, poverty and hardship, the yearly census |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |

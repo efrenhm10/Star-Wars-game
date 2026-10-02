@@ -548,3 +548,17 @@ details.taxinfo p { margin: 4px 0; max-width: 520px; }
 .demo-ages .old { background: #d9a85a; }
 .panel.demo h4 { margin: 12px 0 4px; }
 .panel.demo .statrow.small { gap: 8px; flex-wrap: wrap; }
+
+/* Armed forces, battles, resistance */
+.force-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0; }
+.force-cell { background: rgba(127,127,127,.1); border-radius: 8px; padding: 8px; text-align: center; }
+.force-cell span { font-size: 1.3em; display: block; }
+.force-cell b { font-size: 1.25em; display: block; }
+.force-cell small { opacity: .75; }
+.battle-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+.battle-sides > div { background: rgba(127,127,127,.1); border-radius: 8px; padding: 8px 10px; }
+.battle-sides h4 { margin: 0 0 4px; }
+.haven { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(127,127,127,.15); }
+.haven p { margin: 2px 0 0; }
+.agent-stars { color: #e8b54a; letter-spacing: 1px; }
+@media (max-width: 600px) { .force-grid { grid-template-columns: 1fr 1fr 1fr; } .battle-sides { grid-template-columns: 1fr; } }
