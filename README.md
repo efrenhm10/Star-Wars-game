@@ -391,6 +391,15 @@ structure (children, working age, elders).
   growth strains housing, deep poverty feeds crime and unrest, and emigration
   empties jobs. Arrows compare today's conditions with the last census.
 
+### Industries grow with what you build
+
+Each industry's fit starts from your world's nature and history. It improves
+as you build: universities, academies and a well-educated workforce for
+technology, biotech, finance and droids; factories, firms, facilities and
+infrastructure for heavy industry; a modern spaceport for freight; a clean
+environment for tourism. An industry whose conditions are all met grows
+stronger every month on its own.
+
 ## Fighting the Empire
 
 When the Empire comes, the game becomes a war, whatever your role.
@@ -434,6 +443,19 @@ When the Empire comes, the game becomes a war, whatever your role.
   clearance codes for a courier, leaked troop movements, smuggling on a
   diplomatic ship, an ISB plant on the staff.
 
+## Rewinding time
+
+A checkpoint is saved at every New Year and just before an arrest (the last
+six, on your device). The **Archive** tab's **⏪ Rewind** panel restores any
+of them.
+
+Saves made before checkpoints existed get a one-time rescue. Once the Empire
+has been declared and you're no longer governing, you can go back to
+**20 BBY** (a year before the Empire) as the last planetary office you held.
+The Empire and your arrest are undone; your planet, treasury, laws and
+relationships stay as they are now. This option also appears on your main
+tab while you're out of office.
+
 ## Code layout
 
 | File | Contents |
@@ -458,6 +480,7 @@ When the Empire comes, the game becomes a war, whatever your role.
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
 | `js/rebellion.js` | Armed forces and mobilisation, turn-based battles, espionage, resistance worlds and fleeing, liberation, the war council |
+| `js/rewind.js` | Yearly and pre-arrest checkpoints, restoring them, the rescue back to 20 BBY |
 | `js/demographics.js` | Population, births and deaths, migration, poverty and hardship, the yearly census |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |

@@ -150,6 +150,7 @@ function viewPowers() {
     const L = lens();
     const k = G.office.kind;
     let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${k === "senator" ? "" : empirePanels()}${wartimePanels()}${specialPowers()}`;
+    if (k === "outsider" && canRewindBeforeEmpire()) out += rewindPanel();
     if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
@@ -411,6 +412,7 @@ function viewArchive() {
         ${panel("", historyRecord(), "record-panel")}
         ${panel("Chronicle", `<div class="tabs">${types.map(t => `<button class="tab ${ui.logFilter === t ? "active" : ""}" data-act="logf" data-t="${t}">${t}</button>`).join("")}</div><div class="log">${logs || '<p class="muted">Nothing here.</p>'}</div>`)}
     </div><div class="col-side">
+        ${rewindPanel()}
         ${panel("The dynasty", `<ol class="dynasty-list">${dyn}</ol>`)}
         ${panel("Living legacy", progs ? `<ul class="small">${progs}</ul>` : '<p class="muted small">No long-term programmes running.</p>')}
     </div></div>`;

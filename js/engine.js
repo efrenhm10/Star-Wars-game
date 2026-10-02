@@ -506,6 +506,7 @@ function setOffice(o, { silent = false } = {}) {
     if (o.kind === "chancellor") G.chancellorId = "player";
     else if (prev && prev.kind === "chancellor" && G.chancellorId === "player") G.chancellorId = null;
     if (!G.officesHeld.includes(o.title) && o.kind !== "outsider" && o.kind !== "candidate") G.officesHeld.push(o.title);
+    if (["executive", "monarch", "hereditary", "council", "traditional", "clan"].includes(o.kind)) G.lastGovSpec = { title: o.title, kind: o.kind, desc: o.desc, term: o.termYears, limit: o.termLimit, rung: o.rung };
     const d = G.dynasty[G.dynasty.length - 1];
     if (d && !d.offices.includes(o.title)) d.offices.push(o.title);
     if (G.record) {

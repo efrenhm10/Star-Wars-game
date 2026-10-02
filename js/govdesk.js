@@ -205,9 +205,45 @@ function sectorSuit(k) {
     // Public investments can work around nature.
     const st = G.sectors && G.sectors[k];
     if (st && k === "agri" && (st.assets.includes("irrigation") || G.policies.hydroponics && G.policies.hydroponics.level > 0)) { m = Math.max(m, 0.6); why += " — irrigation and hydroponics help"; }
+    // What you've built changes what your world is good at.
+    const e = earnedSuit(k);
+    if (e.bonus >= 0.05) { m = Math.min(1.6, m + e.bonus); why += ` — now offset by ${e.why}`; }
     m = Math.round(m * 100) / 100;
     const label = m >= 1.2 ? "Excellent" : m >= 0.9 ? "Good" : m >= 0.55 ? "Fair" : m >= 0.35 ? "Poor" : "Unsuited";
     return { m, why, label };
+}
+
+// Capabilities a government creates: skilled people, factories, ports, clean air.
+function earnedSuit(k) {
+    if (!G.planet || !G.sectors || !G.policies) return { bonus: 0, why: "" };
+    const p = G.planet, eff = x => (G.policies[x] ? G.policies[x].eff : 0);
+    const firms = (G.firms || []).filter(f => f.open && !f.failed);
+    const parts = [];
+    const skills = Math.max(0, (p.education - 50) / 50) * 0.55 + (eff("universities") + eff("tech_academies") + eff("research") * 0.6) * 0.18;
+    const heavy = ["shipyards", "arms", "droids", "mining", "energy"];
+    const base = Math.max(...heavy.map(x => G.sectors[x] ? G.sectors[x].str : 0)) / 100 * 0.5
+        + heavy.reduce((n, x) => n + (G.sectors[x] ? G.sectors[x].assets.length : 0), 0) * 0.08
+        + firms.filter(f => heavy.includes(f.sector)).length * 0.08 + Math.max(0, (p.infrastructure - 50) / 100) * 0.4;
+    if (["tech", "biotech", "finance", "droids"].includes(k) && skills > 0) parts.push([skills, "your universities and a skilled workforce"]);
+    if (["shipyards", "arms", "droids", "energy", "mining"].includes(k) && base > 0) parts.push([base * (k === "mining" ? 0.5 : 1), "the industrial base you've built"]);
+    if (["shipyards", "arms"].includes(k) && skills > 0) parts.push([skills * 0.4, "trained engineers"]);
+    if (k === "logistics" && typeof infraNeed === "function") parts.push([Math.max(0, infraNeed("spaceport").have - 50) / 100 + firms.length * 0.03, "a modern spaceport and busy trade"]);
+    if (k === "tourism") parts.push([Math.max(0, (p.environment - 55) / 100) + Math.max(0, (p.infrastructure - 55) / 150), "clean air and good transport"]);
+    if (k === "agri") parts.push([eff("agri_subsidies") * 0.15 + eff("hydroponics") * 0.2, "farm investment"]);
+    const used = parts.filter(([v]) => v >= 0.04);
+    return { bonus: Math.round(used.reduce((s, [v]) => s + v, 0) * 100) / 100, why: used.map(([, w]) => w).join(" and ") };
+}
+
+// Industries grow on their own when the conditions are right.
+function tickSectorGrowth() {
+    if (!G.sectors) return;
+    Object.keys(SECTORS).forEach(k => {
+        const s = SECTORS[k];
+        if (s.needs && !s.needs()) return;
+        const suit = sectorSuit(k), fit = sectorFit(k), st = G.sectors[k];
+        if (fit.ok && suit.m >= 0.55) st.str = clamp(st.str + 0.35 * suit.m + st.assets.length * 0.08);
+        else if (fit.gaps.length >= 2 && st.str > 15) st.str = clamp(st.str - 0.05);
+    });
 }
 
 // How strong each industry already is here.
@@ -661,6 +697,7 @@ function tickGovDesk() {
     tickFirms();
     tickLocalFirms();
     tickRequests();
+    tickSectorGrowth();
 }
 
 

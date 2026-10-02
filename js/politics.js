@@ -272,6 +272,7 @@ function tickPersonal() {
 }
 
 function tickYear() {
+    saveCheckpoint("Start of the year");
     G.age++;
     G.family.children.forEach(c => { c.age++; });
     G.programs.forEach(p => { p.left--; });
@@ -672,6 +673,7 @@ const OUTSIDER_PATHS = [
 ];
 
 function enterOutsider(sub, timer = 0) {
+    if (sub === "Prisoner") saveCheckpoint("Just before your arrest");
     if (sub === "Opposition Leader" && G.lastElectedSpec) {
         setOffice(makeOffice({ title: "Opposition Leader", kind: "opposition", target: G.lastElectedSpec, months: (G.lastElectedSpec.term || 4) * 12 }));
         newOpponent(3);
