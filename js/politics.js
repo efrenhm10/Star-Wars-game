@@ -43,6 +43,7 @@ function endMonth() {
     tickTrade();
     tickWartime();
     tickRebellion();
+    tickPersonal();
     tickGovDesk();
     tickLegislature();
     tickAppropriations();
@@ -272,7 +273,6 @@ function tickPersonal() {
 }
 
 function tickYear() {
-    saveCheckpoint("Start of the year");
     G.age++;
     G.family.children.forEach(c => { c.age++; });
     G.programs.forEach(p => { p.left--; });
@@ -673,7 +673,6 @@ const OUTSIDER_PATHS = [
 ];
 
 function enterOutsider(sub, timer = 0) {
-    if (sub === "Prisoner") saveCheckpoint("Just before your arrest");
     if (sub === "Opposition Leader" && G.lastElectedSpec) {
         setOffice(makeOffice({ title: "Opposition Leader", kind: "opposition", target: G.lastElectedSpec, months: (G.lastElectedSpec.term || 4) * 12 }));
         newOpponent(3);
@@ -712,7 +711,8 @@ function endCareer(reason) {
     log(`🕯️ The career of ${G.name} ends. ${reason}`, "career");
 
     const cands = [];
-    G.family.children.filter(c => c.alive && c.age >= 20).forEach(c => cands.push({ name: `${c.name} ${lastName(G.name)}`, relation: "Your child", age: c.age, bonus: 8 }));
+    const royalLine = isRoyal(), theHeir = royalLine ? heir() : null;
+    living().filter(c => c.age >= 20).sort((a, b) => (b === theHeir) - (a === theHeir)).forEach(c => cands.push({ name: `${c.name} ${lastName(G.name)}`, relation: "Your child", age: c.age, bonus: 8 + (royalLine ? Math.round(heirReady(c) / 10) : 0), note: c === theHeir ? `Heir to the throne · fitness to reign ${heirReady(c)}` : royalLine ? `Fitness to reign ${heirReady(c)}` : "" }));
     const ally = allies()[0];
     cands.push({ name: randomName(G.worldKey), relation: ally ? `Your protégé (recommended by ${ally.name})` : "Your protégé", age: ri(29, 38), bonus: 4 });
     cands.push({ name: G.chiefOfStaff, relation: "Your chief of staff", age: ri(36, 50), bonus: 2 });

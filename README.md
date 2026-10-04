@@ -443,18 +443,37 @@ When the Empire comes, the game becomes a war, whatever your role.
   clearance codes for a courier, leaked troop movements, smuggling on a
   diplomatic ship, an ISB plant on the staff.
 
-## Rewinding time
+## Family and the Crown
 
-A checkpoint is saved at every New Year and just before an arrest (the last
-six, on your device). The **Archive** tab's **⏪ Rewind** panel restores any
-of them.
+A new **🏠 Family** tab holds your personal life.
 
-Saves made before checkpoints existed get a one-time rescue. Once the Empire
-has been declared and you're no longer governing, you can go back to
-**20 BBY** (a year before the Empire) as the last planetary office you held.
-The Empire and your arrest are undone; your planet, treasury, laws and
-relationships stay as they are now. This option also appears on your main
-tab while you're out of office.
+- **Dating and marriage.** Single? Accept invitations and meet people:
+  aides, journalists, pilots, doctors, activists, officers, each with their
+  own chemistry. Ask them out, take them out (relationships fade if you're
+  never there) and propose. A wedding can be a state occasion, a private
+  ceremony or an elopement. Press photographers, disapproving in-laws and
+  breakups happen along the way.
+- **The marriage bond** frays when the work comes first, and faster in
+  wartime. Home dinners and holidays mend it (a holiday during a crisis makes
+  headlines). A happy home keeps you healthy and a broken one wears you down.
+  Expect forgotten anniversaries, a spouse with their own career offers and
+  press scandals, "we never see you", and separation or divorce.
+- **Children** are born with their own temperament: dutiful, bookish, shy,
+  charming, rebellious or wild. You choose their schooling and their path at
+  eighteen. They need you at the worst moments (the recital on the night of
+  the emergency session, a fever during a crisis). They don't always listen,
+  and talking, punishment or letting it go each work differently on each
+  temperament. Teenagers get caught drinking underage, end up in the
+  tabloids, fall in with bad company, run away, cause or face unplanned
+  pregnancies, and want to marry people you'd never choose.
+- **The Crown.** Hereditary and constitutional monarchs have a duty to
+  marry, and the court will press you and offer matches from great houses on
+  other worlds. You must provide an heir and make them fit to reign through
+  schooling, royal duties and discipline. The royal family's popularity feeds
+  your legitimacy. Expect the heir and the spare, an heir who doesn't want
+  the throne, royal tours that take you from your family, official
+  portraits, and the question of abdication. Each child's fitness to reign
+  carries into the succession when your reign ends.
 
 ## Code layout
 
@@ -480,7 +499,7 @@ tab while you're out of office.
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
 | `js/rebellion.js` | Armed forces and mobilisation, turn-based battles, espionage, resistance worlds and fleeing, liberation, the war council |
-| `js/rewind.js` | Yearly and pre-arrest checkpoints, restoring them, the rescue back to 20 BBY |
+| `js/personal.js` | Dating, marriage, children and their temperaments, family crises, the Crown's duties and the succession, the Family tab |
 | `js/demographics.js` | Population, births and deaths, migration, poverty and hardship, the yearly census |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |
 | `js/issues.js` | Issue generator, constituent requests, laws and their consequences, galactic legislation, the Bill Builder |

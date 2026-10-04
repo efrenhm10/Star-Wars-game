@@ -150,7 +150,6 @@ function viewPowers() {
     const L = lens();
     const k = G.office.kind;
     let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${k === "senator" ? "" : empirePanels()}${wartimePanels()}${specialPowers()}`;
-    if (canRewindBeforeEmpire() && !governing()) out = rewindPanel() + out;
     if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
@@ -373,7 +372,7 @@ function viewNetwork() {
         ${cat === "senate" ? panel("The wider Senate", others.map(npcCard).join("")) : ""}
     </div><div class="col-side">
         ${panel(esc(G.name), `<div class="self-portrait">${renderPortrait(G.app, 150)}</div>${statRow("Species", SPECIES[G.app.species].name)}${statRow("Age", G.age)}${statRow("Health", Math.round(G.health), G.health, "good")}${statRow("Reputation", Math.round(G.rep), G.rep)}${statRow("Philosophy", `${FACTIONS[G.ideology].icon} ${FACTIONS[G.ideology].name}`)}<p class="muted small">“${FACTIONS[G.ideology].motto}”</p>${statRow("Chief of staff", esc(G.chiefOfStaff))}`)}
-        ${panel("Family", fam)}
+        ${panel("Family", fam + `<button class="secondary" data-act="view" data-v="family">🏠 Open the Family tab</button>`)}
         ${panel("🤫 Secrets", secrets)}
         ${panel("", `<button class="secondary" data-act="retire">🕯️ Retire and pass the torch</button>`)}
     </div></div>`;
@@ -412,7 +411,6 @@ function viewArchive() {
         ${panel("", historyRecord(), "record-panel")}
         ${panel("Chronicle", `<div class="tabs">${types.map(t => `<button class="tab ${ui.logFilter === t ? "active" : ""}" data-act="logf" data-t="${t}">${t}</button>`).join("")}</div><div class="log">${logs || '<p class="muted">Nothing here.</p>'}</div>`)}
     </div><div class="col-side">
-        ${rewindPanel()}
         ${panel("The dynasty", `<ol class="dynasty-list">${dyn}</ol>`)}
         ${panel("Living legacy", progs ? `<ul class="small">${progs}</ul>` : '<p class="muted small">No long-term programmes running.</p>')}
     </div></div>`;

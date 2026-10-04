@@ -562,3 +562,8 @@ details.taxinfo p { margin: 4px 0; max-width: 520px; }
 .haven p { margin: 2px 0 0; }
 .agent-stars { color: #e8b54a; letter-spacing: 1px; }
 @media (max-width: 600px) { .force-grid { grid-template-columns: 1fr 1fr 1fr; } .battle-sides { grid-template-columns: 1fr; } }
+
+/* Family */
+.child-card { border: 1px solid rgba(127,127,127,.2); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+.child-card .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.child-card .row .tactic { flex: 1 1 140px; margin: 0; }

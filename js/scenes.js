@@ -330,7 +330,7 @@ const SCENES = {
         tag: `GENERATION ${G.generation + 1}`, title: "Who Carries On?",
         body: `<p>${esc(ctx.reason)}</p><p>The galaxy your successor inherits has been shaped by everything that came before: the laws, the grudges, the programmes, the constitution.</p>`,
         choices: [
-            ...ctx.cands.map(s => ({ label: `${s.name} — ${s.relation}`, hint: `Age ${s.age}.`, go: () => frontScene("successor_role", { s }) })),
+            ...ctx.cands.map(s => ({ label: `${s.name} — ${s.relation}`, hint: `Age ${s.age}.${s.note ? ` ${s.note}.` : ""}`, go: () => frontScene("successor_role", { s }) })),
             { label: "Let the story end here", go: () => frontScene("game_over", {}) }
         ]
     }),

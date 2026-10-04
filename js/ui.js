@@ -15,6 +15,7 @@ const VIEWS = [
     { key: "campaign",   icon: "🗳️", name: "Campaign" },
     { key: "galaxy",     icon: "🌌", name: "Galaxy" },
     { key: "network",    icon: "🤝", name: "Network" },
+    { key: "family",     icon: "🏠", name: "Family" },
     { key: "charter",    icon: "⚖️", name: "Charter" },
     { key: "archive",    icon: "📜", name: "Archive" }
 ];
@@ -29,7 +30,7 @@ function render() {
     renderHud();
     renderDock();
     document.body.dataset.lens = lens();
-    const fn = { powers: viewPowers, issues: viewIssues, office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, charter: viewCharter, archive: viewArchive }[view];
+    const fn = { powers: viewPowers, issues: viewIssues, office: viewOffice, chamber: viewChamber, government: viewGovernment, public: viewPublic, campaign: viewCampaign, galaxy: viewGalaxy, network: viewNetwork, family: viewFamily, charter: viewCharter, archive: viewArchive }[view];
     $("#view").innerHTML = fn();
     renderScene();
 }
@@ -88,7 +89,6 @@ function renderHud() {
             <div class="term">${esc(ERAS[G.era].name)}</div>
             <div class="term">${o.termLeft != null ? `Term: ${termLeftLabel()}` : KIND_INFO[o.kind].label}</div>
             <button id="endMonth" class="primary" ${G.scenes.length ? "disabled" : ""}>End Month ▸</button>
-            <button class="mini rewind-btn" data-act="view" data-v="archive">⏪ Rewind</button>
         </div>`;
 }
 
