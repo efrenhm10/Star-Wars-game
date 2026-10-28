@@ -417,6 +417,7 @@ When the Empire comes, the game becomes a war, whatever your role.
   (AT-ATs break through, a second Star Destroyer arrives, a pilot volunteers
   for a suicide run) and you decide again. Afterwards you see the dead on both
   sides, by name where it matters.
+- **Planetary opinion under the Empire** is split between Imperial loyalists and rebel sympathisers. Imperial taxes, garrisons, crackdowns, hardship and the rebellion's victories feed sympathy. Declaring revolt with fewer than 25% sympathisers brings unrest; with half your world behind you, volunteers join your army.
 - **Make your world a resistance planet.** Governors can declare open revolt
   at any time, mobilise, and fight blockades and landing forces themselves.
   Senators and other non-governing roles can go home and raise their world.

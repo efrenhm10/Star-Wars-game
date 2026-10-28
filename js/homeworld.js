@@ -32,6 +32,7 @@ function planetLeader() {
 function homeworldOnOffice(prev, o) {
     if (!G.worldKey || !G.npcs) return;
     if (LEADER_KINDS.includes(o.kind)) {
+        if (isEmpireEra() && !G.revolt && G.galaxy[G.worldKey].align !== "rebel" && G.allegiance === "rebel") G.allegiance = "empire";
         const n = G.leaderId && npc(G.leaderId);
         if (n && n.alive && n.title === o.title) n.title = `Former ${o.title}`;
         G.leaderId = null;

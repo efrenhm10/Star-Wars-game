@@ -85,7 +85,13 @@ function tickOpinion() {
     if (G.occupied) target += G.occupied.by === "Republic" ? 20 : -20;
     if (G.aidMonths > 0) { target -= 8 * aidSensitivity(); G.aidMonths--; }
     if (G.allegiance === "separatist") target += 10;
-    if (G.era === "empire" || G.era === "rebellion") target = 10 + G.liberties * 0.2;
+    // Under the Empire the split is Imperial loyalists against rebel sympathisers.
+    if (G.era === "empire" || G.era === "rebellion") {
+        const pol = G.policies;
+        const crackdown = ((pol.martial_law ? pol.martial_law.eff : 0) + (pol.censorship ? pol.censorship.eff : 0) + (pol.surveillance ? pol.surveillance.eff : 0)) * 8;
+        target = 8 + G.liberties * 0.2 + hardship + G.rebellion * 0.25 + w.sep * 0.2 + crackdown
+            + (typeof imperialWorld === "function" && imperialWorld() ? 5 : 0) + (G.occupied ? 15 : 0) + (G.revolt ? 18 : 0) + (G.aidMonths > 0 ? -4 : 0);
+    }
     const neutral = w.canonAlign === "neutral" ? 28 : 16;
     G.opinion.sep = clamp(G.opinion.sep + (clamp(target) - G.opinion.sep) * 0.05);
     G.opinion.loyal = clamp(G.opinion.loyal + (clamp(100 - G.opinion.sep - neutral) - G.opinion.loyal) * 0.05);

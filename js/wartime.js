@@ -109,6 +109,7 @@ function wartimePanels() {
     }
     if (imperialWorld() && governing()) {
         out += panel("✊ Quiet resistance", `<p class="small">You still hold office. That gives you forms, stamps, budgets and staff — and ways to defy the Empire without firing a shot. Every one of them raises the ISB's interest in you.</p>
+            ${typeof declareRevoltButton === "function" ? declareRevoltButton() : ""}
             ${tact("govresist", "📄 Falsify production reports", 3, "Short the quotas.", 'data-t="falsify"')}
             ${tact("govresist", "🏚️ Hide dissidents and refugees", 3, "", 'data-t="hide"')}
             ${tact("govresist", "🐌 Slow-walk Imperial directives", 3, "Autonomy up. The Moff notices.", 'data-t="slowwalk"')}

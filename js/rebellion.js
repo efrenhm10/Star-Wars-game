@@ -647,10 +647,19 @@ function raiseHome(free = false) {
     render();
 }
 
+function declareRevoltButton() {
+    const s = Math.round(G.opinion.sep), w = world();
+    return tact("declarerevolt", `✊ Declare ${esc(w.name)} free — in open revolt against the Empire`, 5, `${s}% of your people sympathise with the rebels${s < 25 ? " — too few; expect unrest" : s >= 50 ? " — they'll rise with you" : ""}. The Empire will answer with Star Destroyers.`);
+}
+
 function declareRevolt() {
     if (!spendAP(5)) return;
+    const s = G.opinion.sep;
+    if (s < 25) report("The people hesitate", "Most of your people are not ready for this. Loyalists take to the streets against your government.", applyEffects({ unrest: 12, legitimacy: -10 }));
+    else if (s >= 50) { report("The people rise with you", "Crowds fill the squares. Volunteers queue outside every recruiting office.", applyEffects({ legitimacy: 10, trust: 5 })); G.rebelVolunteers = Math.round(FORCE_BASE[worldMil(G.worldKey)] * 0.1); }
     if (G.forces && G.forces.under === "imperial") { G.forces.under = "planetary"; G.forces.troops += Math.round(FORCE_BASE[worldMil(G.worldKey)] * 0.15) + (G.secretMilitia || 0) * 2000; G.forces.base = { troops: G.forces.troops, ships: G.forces.ships, fighters: G.forces.fighters }; }
     imperialPath("revolt");
+    if (G.rebelVolunteers && G.forces) { G.forces.troops += G.rebelVolunteers; G.rebelVolunteers = 0; }
     render();
 }
 
@@ -676,7 +685,6 @@ function havenPanel() {
     const H = havens();
     const w = world();
     let out = "";
-    if (governing() && imperialWorld()) out += tact("declarerevolt", `✊ Declare ${esc(w.name)} in open revolt`, 5, "Your world becomes a resistance planet. The Empire will come with Star Destroyers.");
     if (!governing() && mode !== "rebel" && isEmpireEra() && G.galaxy[G.worldKey].align !== "rebel") out += tact("raisehome", `✊ Go home and raise ${esc(w.name)} against the Empire`, 4, "Leave your post. Lead the partisans. Liberate your world.");
     const list = H.filter(h => !(G.ug && G.ug.base === h.key)).map(h => `<div class="haven"><div><b>${esc(worldName(h.key))}</b><p class="small">${esc(h.text)}</p></div><button class="mini" data-act="flee" data-k="${h.key}" ${G.ap < 3 ? "disabled" : ""}>${mode === "rebel" ? "Move base · 3" : "Flee · 3"}</button></div>`).join("");
     if (list) out += `<h4>${mode === "rebel" ? "Move your base" : "Flee to a resistance world"}</h4>${list}`;
@@ -727,8 +735,15 @@ function warRoomPanel() {
         <p class="small muted">Battles won ${R.won} · lost ${R.lost}${R.edge > 0 ? ` · 🗺️ stolen troop movements (${R.edge} mo)` : ""}</p>${free}${out}`, "danger");
 }
 
+// A government on an Imperial-ruled world is part of the Empire until it declares otherwise,
+// even if its leader once ran with the rebels.
+function fixImperialAllegiance() {
+    if (governing() && isEmpireEra() && !G.revolt && G.allegiance === "rebel" && G.galaxy[G.worldKey].align !== "rebel") G.allegiance = "empire";
+}
+
 // Everything the war adds to the Powers tab.
 function resistancePanels() {
+    fixImperialAllegiance();
     const mode = resistMode();
     let out = "";
     const showForces = mode === "rebel" || mode === "partisan" || ((governing() || G.office.kind === "council") && (G.war || G.siege || G.occupied || G.revolt || isEmpireEra()));
@@ -770,6 +785,7 @@ const REB_EVENTS = {
 
 function tickRebellion() {
     const R = initReb();
+    fixImperialAllegiance();
     if (R.edge > 0) R.edge--;
     if (R.mole > 0) { R.mole--; G.isb = Math.max(0, (G.isb || 0) - 1); if (G.ug) G.ug.exposure = clamp(G.ug.exposure - 1); }
     if (isEmpireEra()) R.imp = clamp(R.imp + 0.25 - G.rebellion * 0.004, 15, 95);

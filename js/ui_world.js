@@ -316,13 +316,23 @@ function viewGalaxy() {
         ${panel("Your standing with the factions", facs)}</div></div>`;
 }
 
+function opinionLabels() {
+    if (G.era === "empire" || G.era === "rebellion") return { loyal: "Imperial loyalists", sep: "Rebel sympathisers", lc: ALIGN_COLORS.empire, sc: ALIGN_COLORS.rebel,
+        why: "Imperial taxes, garrisons, crackdowns, hardship and the rebellion's successes push people toward the rebels; order, jobs and Imperial aid keep them loyal." };
+    if (G.era === "newrepublic") return { loyal: "New Republic supporters", sep: "Imperial holdouts", lc: ALIGN_COLORS.republic, sc: ALIGN_COLORS.empire,
+        why: "Peace, prosperity and fair government win people over; hardship and disorder feed nostalgia for the Empire." };
+    return { loyal: "Republic loyalists", sep: "Separatists", lc: ALIGN_COLORS.republic, sc: ALIGN_COLORS.separatist,
+        why: "Economic hardship, Republic corruption, blockades and occupation push separatism up; Republic aid pulls it down." };
+}
+
 function opinionPanel() {
-    const o = G.opinion;
+    const o = G.opinion, L = opinionLabels();
     const n = Math.max(0, 100 - o.loyal - o.sep);
+    const homeAlign = G.galaxy[G.worldKey] ? G.galaxy[G.worldKey].align : G.allegiance;
     return panel(`Planetary opinion — ${esc(world().name)}`, `
-        <div class="opinion-bar"><span style="width:${o.loyal}%;background:${ALIGN_COLORS.republic}"></span><span style="width:${n}%;background:${ALIGN_COLORS.neutral}"></span><span style="width:${o.sep}%;background:${ALIGN_COLORS.separatist}"></span></div>
-        <div class="opinion"><div><b style="color:${ALIGN_COLORS.republic}">${Math.round(o.loyal)}%</b><span>Republic loyalists</span></div><div><b style="color:${ALIGN_COLORS.neutral}">${Math.round(n)}%</b><span>Neutral</span></div><div><b style="color:${ALIGN_COLORS.separatist}">${Math.round(o.sep)}%</b><span>Separatists</span></div></div>
-        <p class="muted small">Your world: <b style="color:${ALIGN_COLORS[G.allegiance]}">${ALIGN_NAMES[G.allegiance]}</b>. Economic hardship, Republic corruption, blockades and occupation push separatism up; Republic aid pulls it down.</p>`);
+        <div class="opinion-bar"><span style="width:${o.loyal}%;background:${L.lc}"></span><span style="width:${n}%;background:${ALIGN_COLORS.neutral}"></span><span style="width:${o.sep}%;background:${L.sc}"></span></div>
+        <div class="opinion"><div><b style="color:${L.lc}">${Math.round(o.loyal)}%</b><span>${L.loyal}</span></div><div><b style="color:${ALIGN_COLORS.neutral}">${Math.round(n)}%</b><span>Neutral</span></div><div><b style="color:${L.sc}">${Math.round(o.sep)}%</b><span>${L.sep}</span></div></div>
+        <p class="muted small">Your world: <b style="color:${ALIGN_COLORS[homeAlign]}">${ALIGN_NAMES[homeAlign]}</b>. ${L.why}</p>`);
 }
 
 
