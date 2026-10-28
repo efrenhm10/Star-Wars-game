@@ -330,7 +330,7 @@ const SCENES = {
         tag: `GENERATION ${G.generation + 1}`, title: "Who Carries On?",
         body: `<p>${esc(ctx.reason)}</p><p>The galaxy your successor inherits has been shaped by everything that came before: the laws, the grudges, the programmes, the constitution.</p>`,
         choices: [
-            ...ctx.cands.map(s => ({ label: `${s.name} — ${s.relation}`, hint: `Age ${s.age}.${s.note ? ` ${s.note}.` : ""}`, go: () => frontScene("successor_role", { s }) })),
+            ...ctx.cands.map(s => ({ label: `${s.name} — ${s.relation}`, hint: `Age ${s.age}.${s.note ? ` ${s.note}.` : ""}`, go: () => { if (s.wait) { skipYears(s.wait); s.age += s.wait; } frontScene("successor_role", { s }); } })),
             { label: "Let the story end here", go: () => frontScene("game_over", {}) }
         ]
     }),
@@ -338,7 +338,12 @@ const SCENES = {
     successor_role: ctx => ({
         tag: "A NEW CAREER", title: `${ctx.s.name}: Choose a Role`,
         body: `<p>Where on ${world().name} does ${esc(ctx.s.name)} begin?</p>`,
-        choices: world().roles.map((r, i) => ({ r, i })).filter(({ r }) => !(r.kind === "senator" && G.galaxy[G.worldKey].independent)).map(({ r, i }) => ({ label: r.title, hint: r.desc, go: () => beginSuccessor(ctx.s, i) }))
+        choices: (() => {
+            const throne = ctx.s.child && ["hereditary", "monarch"].includes(G.office.kind) ? world().roles.findIndex(r => r.title === G.office.title || G.office.title.includes(r.title)) : -1;
+            return world().roles.map((r, i) => ({ r, i })).filter(({ r }) => !(r.kind === "senator" && G.galaxy[G.worldKey].independent))
+                .sort((a, b) => (b.i === throne) - (a.i === throne))
+                .map(({ r, i }) => ({ label: i === throne ? `👑 ${r.title} — your birthright` : r.title, hint: r.desc, go: () => beginSuccessor(ctx.s, i) }));
+        })()
     }),
 
     outsider_path: ctx => ({
@@ -382,3 +387,30 @@ const SCENES = {
         };
     }
 };
+
+Object.assign(SCENES, {
+    retire_confirm: () => ({ tag: "THE FAMILY'S CAUSE", title: "Retire and pass the torch?",
+        body: `<p>Step down and hand the family's cause to a successor — one of your children, a protégé, or your chief of staff. ${living().length ? `Your children: ${living().map(c => `${esc(c.name)} (${c.age})`).join(", ")}.` : "You have no children."}</p><p class="small muted">Children under 16 can still carry on: the story skips ahead until they come of age.</p>`,
+        choices: [
+            { label: "🕯️ Retire and choose a successor", go: () => retire() },
+            { label: "Not yet", go: () => {} }
+        ] })
+});
+
+// The years pass while the next generation grows up. History happens without you.
+function skipYears(n) {
+    const happened = [];
+    for (let i = 0; i < n * 12; i++) {
+        G.month++;
+        if (G.month > 12) { G.month = 1; G.year++; G.family.children.forEach(c => { c.age++; }); }
+        const before = Object.keys(G.hist).length;
+        tickHistory();
+        if (Object.keys(G.hist).length > before) happened.push(eraYear(currentBBY()));
+        // Scenes nobody was there to see still leave their mark on history.
+        G.scenes.forEach(s => { if (s.type.startsWith("hist_") && SCENES[s.type]) { try { SCENES[s.type](s.ctx); } catch (e) { /* ignore */ } } });
+        G.scenes = G.scenes.filter(s => s.type === "succession" || s.type === "successor_role");
+        G.inbox = [];
+    }
+    G.bills = G.bills.filter(b => b.arena !== "senate" || b.voteIn > 0);
+    log(`⏳ ${n} years pass while the next generation grows up.${happened.length ? " The galaxy changed while they waited." : ""}`, "career");
+}

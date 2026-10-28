@@ -593,6 +593,8 @@ function viewFamily() {
     </div><div class="col-side">
         ${crown}
         ${panel(esc(G.name), `${statRow("Age", G.age)}${statRow("Health", Math.round(G.health), G.health, "good")}<p class="small muted">A happy home keeps you healthy. A broken one wears you down.</p>${lost ? `<p class="small">Lost: ${lost}</p>` : ""}`)}
+        ${f.siblings && f.siblings.length ? panel("Brothers and sisters", `<ul class="small">${f.siblings.map(x => `<li>${esc(x.name)}</li>`).join("")}</ul>`) : ""}
         ${panel("Family history", hist)}
+        ${panel("", `<button class="secondary" data-act="retire">🕯️ Retire and pass the torch${living().length ? " to your children" : ""}</button>`)}
     </div></div>`;
 }

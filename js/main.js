@@ -126,7 +126,7 @@ const ACTIONS = {
     endorse: d => seekEndorsement(d.id),
     leakrival: d => leakOnRival(d.id),
     denounce: d => denounce(d.id),
-    retire: () => { if (confirm("Retire and hand the family's cause to a successor?")) retire(); },
+    retire: () => { frontScene("retire_confirm", {}); render(); },
 
     "amend-start": d => startAmendment(d.key),
     "amend-do": d => amendmentAction(d.t),

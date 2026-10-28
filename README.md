@@ -476,6 +476,13 @@ A new **🏠 Family** tab holds your personal life.
   the throne, royal tours that take you from your family, official
   portraits, and the question of abdication. Each child's fitness to reign
   carries into the succession when your reign ends.
+- **Carrying on as your children.** Retire from the Family or Network tab, or
+  wait for your career to end, and every child is offered as your successor.
+  If a child is under 16, the story skips ahead until they come of age, and
+  history happens without you: the Empire may rise while they grow up. A
+  child who takes over keeps their own spouse and siblings, and their
+  upbringing (duty, scandals, fitness to reign) shapes their reputation and
+  legitimacy. A royal heir sees the throne first, marked as their birthright.
 
 ## Your homeworld's leadership
 

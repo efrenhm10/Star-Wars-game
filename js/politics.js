@@ -712,7 +712,11 @@ function endCareer(reason) {
 
     const cands = [];
     const royalLine = isRoyal(), theHeir = royalLine ? heir() : null;
-    living().filter(c => c.age >= 20).sort((a, b) => (b === theHeir) - (a === theHeir)).forEach(c => cands.push({ name: `${c.name} ${lastName(G.name)}`, relation: "Your child", age: c.age, bonus: 8 + (royalLine ? Math.round(heirReady(c) / 10) : 0), note: c === theHeir ? `Heir to the throne · fitness to reign ${heirReady(c)}` : royalLine ? `Fitness to reign ${heirReady(c)}` : "" }));
+    living().slice().sort((a, b) => (b === theHeir) - (a === theHeir) || b.age - a.age).forEach(c => {
+        const wait = c.age < 16 ? 18 - c.age : 0;
+        const bits = [c === theHeir ? `Heir to the throne · fitness to reign ${heirReady(c)}` : royalLine ? `Fitness to reign ${heirReady(c)}` : "", `${TEMPERS[c.temper] ? TEMPERS[c.temper].name : ""}`, wait ? `Too young — the story skips ${wait} years until they come of age` : ""].filter(Boolean);
+        cands.push({ name: `${c.name} ${lastName(G.name)}`, child: c.name, relation: "Your child", age: c.age, wait, bonus: 8 + (royalLine ? Math.round(heirReady(c) / 10) : 0), note: bits.join(" · ") });
+    });
     const ally = allies()[0];
     cands.push({ name: randomName(G.worldKey), relation: ally ? `Your protégé (recommended by ${ally.name})` : "Your protégé", age: ri(29, 38), bonus: 4 });
     cands.push({ name: G.chiefOfStaff, relation: "Your chief of staff", age: ri(36, 50), bonus: 2 });
@@ -738,8 +742,18 @@ function beginSuccessor(s, roleIndex) {
     G.obligations = [];
     G.amendment = null;
     G.inbox = [];
-    G.family = makeFamily();
-    if (G.family.spouse && chance(30)) G.family.spouse = null;
+    // Your own child carries the family on: their siblings, their spouse, their upbringing.
+    const kid = s.child ? G.family.children.find(c => c.name === s.child) : null;
+    if (kid) {
+        const sibs = G.family.children.filter(c => c !== kid && c.alive).map(c => ({ name: `${c.name} ${lastName(prev)}`, age: c.age }));
+        G.family = { spouse: kid.married ? { name: randomName(G.worldKey), alive: true } : null, children: [], siblings: sibs };
+        G.rep = clamp(G.rep + (kid.duty - 50) * 0.2 - (kid.scandal || 0) * 3);
+        if (typeof heirReady === "function") G.legitimacy = clamp(40 + heirReady(kid) * 0.5);
+        G.consistency = clamp(60 + (kid.duty - 50) * 0.3);
+    } else {
+        G.family = makeFamily();
+        if (G.family.spouse && chance(30)) G.family.spouse = null;
+    }
     G.chiefOfStaff = randomName(G.worldKey);
     G.officesHeld = [];
     const heirApp = s.relation === "Your child" ? { ...G.app, hair: pick(["short", "long", "bun", "braids"]), age: "young", accessory: "none" } : randomAppearance(pick(world().species));
