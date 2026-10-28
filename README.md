@@ -475,6 +475,32 @@ A new **🏠 Family** tab holds your personal life.
   portraits, and the question of abdication. Each child's fitness to reign
   carries into the succession when your reign ends.
 
+## Your homeworld's leadership
+
+When you don't run your planet, someone else does. The planetary leader is a
+real person with a faction and a relationship with you. If you were the
+leader and moved on (for example from Chairman of Pantora to the Senate),
+your successor, or the person you displaced, takes the job back. Their
+government's policy changes lean toward their faction.
+
+On the Senate Desk, the **🪐 homeworld panel** lets a senator:
+
+- **Fly home and meet the leader.** Urge them to expand or cut laws your
+  philosophy cares about, press them to spend more on defence, ask them to
+  back you publicly before a Senate vote, ask what the homeworld needs, or
+  just talk. Under the Empire, if they trust you, you can quietly ask them to
+  help the rebellion. Success depends on your relationship, their faction,
+  your influence and your reputation. A leader who dislikes you may not see
+  you at all.
+- **Seek Republic funds for the homeworld's defences.** This is a Senate bill
+  through the Defence Committee. If it passes it buys shield generators and
+  orbital batteries (defence works), warships and starfighters, and raises
+  defence strength. Worlds that are vulnerable or at war get more support for
+  it. You can ask again two years after it passes.
+
+World-specific panels such as the Pantoran Assembly now show senators the
+state of play without the controls only the planetary government holds.
+
 ## Code layout
 
 | File | Contents |
@@ -499,6 +525,7 @@ A new **🏠 Family** tab holds your personal life.
 | `js/wartime.js` | Planetary autonomy, the war economy, wartime and Imperial demands, a governor's quiet resistance |
 | `js/govdesk.js` | The Government desk: cabinet, infrastructure, industries and climate fit, courting companies and CEO meetings, bonds and debt, Coruscant grants and bailouts, opening ceremonies, capital-program priorities |
 | `js/rebellion.js` | Armed forces and mobilisation, turn-based battles, espionage, resistance worlds and fleeing, liberation, the war council |
+| `js/homeworld.js` | The planetary leader when it isn't you, meetings back home, Senate defence appropriations for the homeworld |
 | `js/personal.js` | Dating, marriage, children and their temperaments, family crises, the Crown's duties and the succession, the Family tab |
 | `js/demographics.js` | Population, births and deaths, migration, poverty and hardship, the yearly census |
 | `js/attributes.js` | World attributes (the stars) and their effects; special mechanics for Pantora, Taris, Scipio, Umbara, Rodia and Cato Neimoidia |

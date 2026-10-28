@@ -150,7 +150,7 @@ function viewPowers() {
     const L = lens();
     const k = G.office.kind;
     let out = `<div class="lens-banner lens-${L}"><span>${esc(roleSchema().label.toUpperCase())}</span><span>${esc(G.office.title)} · ${esc(world().name)}</span></div>${schemaPanel()}${warPanel()}${k === "senator" ? "" : empirePanels()}${wartimePanels()}${specialPowers()}`;
-    if (k === "senator") out += senatePanels() + empirePanels() + senatorDesk();
+    if (k === "senator") out += homeworldPanel() + senatePanels() + empirePanels() + senatorDesk();
     else if (k === "chancellor") out += chancelleryDesk();
     else if (k === "minister") out += ministryDesk();
     else if (L === "court") out += courtDesk() + (canDecree() || traditionalGovernment() ? govDesk() : "") + rolePowers();

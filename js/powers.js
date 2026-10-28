@@ -146,7 +146,7 @@ const BILL_COMMITTEE = {
 };
 
 function committeeFor(b) {
-    if (b.petition) return "defense";
+    if (b.petition || b.defenseFor) return "defense";
     if (b.key.startsWith("aid_")) return "finance";
     if (BILL_COMMITTEE[b.key]) return BILL_COMMITTEE[b.key];
     if (MAJOR_COMMITTEE[b.key]) return MAJOR_COMMITTEE[b.key];

@@ -59,6 +59,8 @@ const ACTIONS = {
     raisehome: () => raiseHome(),
     declarerevolt: () => declareRevolt(),
     personal: d => personalAction(d.t, d.k),
+    flyhome: () => flyHome(),
+    defensegrant: () => seekDefenseGrant(),
     probe: d => probeChancellor(d.t),
     govtab: d => { ui.govTab = d.t; render(); },
     lawpick: d => { ui.govTab = "web"; ui.policy = `p:${d.key}`; render(); },

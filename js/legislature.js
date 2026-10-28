@@ -431,6 +431,7 @@ function resolveBill(b) {
     if (b.keyVote && involved) recordVote(b.title, vote);
     arenaNpcs(b.arena).filter(n => n.canon && Math.abs(b.stance[n.faction] || 0) >= 2).forEach(n => remember(n, `You voted ${vote.toUpperCase()} on the ${b.title}.`));
     if (b.petition) resolvePetition(b, passed);
+    if (b.defenseFor) resolveDefenseGrant(b, passed);
     if (b.sponsor === "player") {
         changes.push(...applyEffects(passed ? { influence: 7, rep: 2 } : { influence: -4 }));
         log(`${passed ? "✅ Your bill passed" : "❌ Your bill failed"}: ${b.title} (${t.for}–${t.against}).`, "legislation");

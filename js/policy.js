@@ -232,7 +232,7 @@ function tickPolicies() {
 }
 
 function npcGovernmentMove() {
-    const pm = G.pm && npc(G.pm);
+    const pm = (G.pm && npc(G.pm)) || (typeof planetLeader === "function" ? planetLeader() : null);
     const keys = Object.keys(POLICIES).filter(k => (!POLICIES[k].war || wartime()) && (typeof policyAvailable !== "function" || policyAvailable(k)) && !POLICIES[k].extreme);
     const liked = pm ? keys.filter(k => (POLICIES[k].f[pm.faction] || 0) > 0) : [];
     const k = liked.length && chance(70) ? pick(liked) : pick(keys);

@@ -169,10 +169,13 @@ function specialPowers() {
     const k = G.office.kind;
     const inGov = governing() || ["council", "executive", "senator", "local"].includes(k);
     if (!inGov) return "";
-    const b = (t, label, cost, note = "") => tact("special", label, cost, note, `data-t="${t}"`);
+    // A senator watches the planetary government's levers; only a few things can be done from Coruscant.
+    const fromSenate = k === "senator";
+    const b = (t, label, cost, note = "") => fromSenate && !["food_aid"].includes(t) ? "" : tact("special", label, cost, note, `data-t="${t}"`);
+    const senNote = fromSenate ? `<p class="muted small">This is the planetary government's business. From the Senate you can watch it — and fly home to press the leadership (see your homeworld panel).</p>` : "";
     if (sp === "assembly") return panel("🏛️ The Pantoran Assembly", `${statRow("Coalition support", `${Math.round(G.assembly)}%`, G.assembly, G.assembly >= 50 ? "good" : "bad")}
-        <p class="muted small">Below 35% a Chairman faces a confidence vote. Your bills in the Assembly gain or lose momentum with the coalition.</p>
-        <select id="partnerSel">${["federalists", "reformers", "centralists", "corporatists", "traditionalists"].map(f => `<option value="${f}">${FACTIONS[f].name}</option>`).join("")}</select>
+        <p class="muted small">${k === "executive" ? "Below 35% you face a confidence vote. Your bills in the Assembly gain or lose momentum with the coalition." : "The governing coalition's support. Below 35%, the Chairman faces a confidence vote."}</p>${senNote}
+        ${fromSenate ? "" : `<select id="partnerSel">${["federalists", "reformers", "centralists", "corporatists", "traditionalists"].map(f => `<option value="${f}">${FACTIONS[f].name}</option>`).join("")}</select>`}
         ${b("partner", "Negotiate with a coalition partner", 4, "Concessions buy votes.")}${b("whip", "Whip the Assembly", 3)}`);
     if (sp === "finance") return panel("🏦 The Vaults of Scipio", `${statRow("Galactic lending rate", `${G.lendingRate}%`)}${statRow("System leverage", Math.round(G.leverage), G.leverage, "bad")}
         <p class="muted small">Cheap credit booms the galaxy and builds leverage; above 80 a crisis can spread to every world.</p>

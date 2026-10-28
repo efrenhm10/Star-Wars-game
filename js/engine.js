@@ -513,6 +513,7 @@ function setOffice(o, { silent = false } = {}) {
         if (last && last.to == null) last.to = currentBBY();
         if (o.kind !== "candidate") G.record.offices.push({ title: o.title, world: world().name, from: currentBBY(), to: null, name: G.name });
     }
+    if (typeof homeworldOnOffice === "function") homeworldOnOffice(prev, o);
     if (!silent) log(`${G.name} becomes ${o.title}.`, "career");
 }
 
