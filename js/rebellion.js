@@ -65,7 +65,11 @@ function forcesUpkeep() {
 function forcesAction(t) {
     const f = initForces();
     const rebel = f.under === "rebel";
-    const costs = { mobilize: 4, demobilize: 2, recruit: 3, train: 3, ships: 4, fighters: 3, rally: 2 };
+    const costs = { mobilize: 4, demobilize: 2, recruit: 3, train: 3, ships: 4, fighters: 3, rally: 2, buysup: 2, bigbuy: 3, donations: 2, villages: 2, allysup: 3 };
+    if (t === "buysup" && G.funds < 1) return toast("Not enough credits", "Smugglers want 1M credits for a shipment. Raise money from sympathisers first.");
+    if (t === "bigbuy" && G.funds < 3) return toast("Not enough credits", "A full freighter of supplies costs 3M credits.");
+    if (t === "allysup" && !(G.rebellion >= 25 || currentBBY() <= 2)) return toast("No Alliance yet", "The rebel cells aren't organised enough to send supplies. Build the rebellion first.");
+    if (t === "allysup" && initReb().allyAt != null && monthsNow() - G.reb.allyAt < 6) return toast("Too soon", `The Alliance already sent you a shipment. Ask again in ${6 - (monthsNow() - G.reb.allyAt)} months.`);
     if (f.under === "imperial") return toast("Under Imperial command", "Your army serves the Empire now. Only a secret militia is yours.");
     if (t === "mobilize" && (f.mobilized || f.reserves < 10)) return toast("Already mobilised", "Every reserve you have is already under arms.");
     if (t === "demobilize" && !f.mobilized) return toast("Not mobilised", "Your forces are on a peacetime footing.");
@@ -115,12 +119,33 @@ function forcesAction(t) {
             else { const n = Math.max(12, Math.round(f.base.fighters * 0.25 / 12) * 12); ch = applyEffects({ treasury: -Math.max(0.3, Math.round(n * 0.01 * 10) / 10) }); f.queue.push({ ships: 0, fighters: n, months: 3 }); report("Starfighters ordered", `${n} starfighters ordered. Delivery in three months.`, ch); }
             break;
         }
+        case "buysup": ch = applyEffects({ funds: -1 }); addSupplies(20); addExposure(2); report("📦 A smuggler's shipment", "Ration packs, fuel cells, power packs and medkits — no questions asked. Supplies +20."); break;
+        case "bigbuy": ch = applyEffects({ funds: -3 }); addSupplies(70); addExposure(5); report("📦 A full freighter", "A whole freighter's hold, landed at night on an abandoned strip. Supplies +70."); break;
+        case "donations": { const m = Math.round((0.6 + G.rebellion / 60 + Math.max(0, G.rep - 40) / 60 + rnd(0, 0.6)) * 10) / 10; ch = applyEffects({ funds: m }); addExposure(4); report("💰 Sympathisers give", `Shopkeepers, old senators, a few rich families who hate the Empire more than they fear it: ${m}M credits.`, ch); break; }
+        case "villages": { const n = ri(8, 14); addSupplies(n); addExposure(3); if (chance(20)) applyEffects({ g: { rural: -3 } }); report("🌾 The villages share", `Farmers leave sacks of grain and canisters of fuel where your fighters can find them. Supplies +${n}.`); break; }
+        case "allysup": initReb().allyAt = monthsNow(); addSupplies(35); G.rebellion = clamp(G.rebellion + 1); report("✊ Alliance shipment", "A blockade runner drops out of hyperspace with Alliance crates: food, medicine, blasters. Supplies +35."); break;
         case "rally": f.morale = clamp(f.morale + 12); report("You address the troops", pick(["You walk the lines and shake every hand you can.", "A speech from the back of a speeder truck, in the rain. They cheer anyway.", "You eat with the troops. Word gets around."])); break;
     }
     render();
 }
 
 // The Empire takes what it wants.
+// Where a rebel army's food, fuel and ammunition come from.
+function supplyUse() { const f = G.forces; return (f && f.under === "rebel" ? Math.max(1, Math.round(f.troops / 800)) : 0) + (G.ug ? 2 : 0); }
+function supplyPanelBody() {
+    const sup = Math.round(rSupplies()), use = supplyUse(), months = use ? Math.floor(sup / use) : 99;
+    const ally = G.rebellion >= 25 || currentBBY() <= 2;
+    return `<h4>📦 Supplies</h4>
+        ${statRow("Supplies", sup, Math.min(100, sup), sup < use * 2 ? "bad" : "good")}
+        <p class="small ${months < 2 ? "c-against" : ""}">Your fighters${G.ug ? " and cells" : ""} use about <b>${use} a month</b> — ${months >= 99 ? "plenty" : months < 1 ? "<b>you're out. Fighters will start going home.</b>" : `enough for ${months} month${months === 1 ? "" : "s"}`}. You have <b>${G.funds.toFixed(1)}M credits</b>.</p>
+        ${tact("forces", "💰 Raise money from sympathisers", 2, "Credits; the ISB notices.", 'data-t="donations"')}
+        ${tact("forces", "📦 Buy supplies from smugglers", 2, "1M credits → 20 supplies.", 'data-t="buysup"')}
+        ${tact("forces", "🚢 Buy a full freighter load", 3, "3M credits → 70 supplies.", 'data-t="bigbuy"')}
+        ${tact("forces", "🌾 Ask the villages for food", 2, "About 10 supplies, free.", 'data-t="villages"')}
+        ${ally ? tact("forces", "✊ Ask the Alliance for a shipment", 3, "35 supplies, every six months.", 'data-t="allysup"') : `<p class="muted small">Once the rebellion is strong enough, the Alliance will send shipments.</p>`}
+        <p class="muted small">Winning raids and convoy ambushes in the War room captures supplies too.</p>`;
+}
+
 function imperialRequisition(share, why) {
     const f = initForces();
     const tk = Math.round(f.troops * share), sk = Math.round(f.ships * share), fk = Math.round(f.fighters * share);
@@ -155,6 +180,8 @@ function forcesPanel() {
             <p class="muted small">A secret militia (Quiet resistance) is the only force that's still yours — until you declare open revolt.</p>`;
     } else if (rebel) {
         body = `<p class="small">Partisans, deserters and volunteers. Supplies feed them; victories arm them.${G.ug && G.ug.base ? ` Base: <b>${esc(worldName(G.ug.base))}</b>.` : ""}</p>${grid}${bars}${q}
+            ${supplyPanelBody()}
+            <h4>🪖 Your fighters</h4>
             ${tact("forces", "🪖 Recruit fighters", 3, "10 supplies.", 'data-t="recruit"')}
             ${tact("forces", "🎯 Train", 3, "5 supplies. Readiness up.", 'data-t="train"')}
             ${tact("forces", "✈️ Buy a starfighter squadron", 3, "1M credits.", 'data-t="fighters"')}

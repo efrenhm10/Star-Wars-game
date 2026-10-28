@@ -427,6 +427,7 @@ When the Empire comes, the game becomes a war, whatever your role.
   Shadowlands and Free Ryloth are available from 19 BBY; later Lothal, Jedha,
   Mon Cala and Echo Base on Hoth, plus any world you've freed. First you have
   to get past the ISB at the spaceport. Local fighters join you there.
+- **Supplies.** Rebel fighters and cells eat supplies every month, and the forces panel shows how long yours will last. You can raise credits from sympathisers, buy from smugglers (1M for 20, or 3M for a full freighter of 70), ask the villages for food, or, once the rebellion is strong, request an Alliance shipment every six months. Winning raids and convoy ambushes captures more.
 - **The war room.** Raid garrisons, ambush convoys, strike orbital outposts,
   join Alliance operations, liberate neighbouring worlds and defend them when
   the Empire strikes back. A meter shows the Empire's grip on the sector.
