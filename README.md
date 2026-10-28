@@ -400,6 +400,17 @@ infrastructure for heavy industry; a modern spaceport for freight; a clean
 environment for tourism. An industry whose conditions are all met grows
 stronger every month on its own.
 
+## Arrests come with a warning
+
+Before the ISB arrests you, someone tips you off: your chief of staff, an old
+friend in the records division, an anonymous message. You get a month or
+more to act. You can flee to a resistance world, disappear underground, call
+in every favour, destroy the evidence and lie low, or get your family
+offworld. When they come, you can go quietly, call your allies from the
+doorway, or go out the back window. In prison, a panel shows your sentence;
+you can plan an escape or appeal through your allies. You choose a new path
+only when you're released.
+
 ## Fighting the Empire
 
 When the Empire comes, the game becomes a war, whatever your role.

@@ -894,10 +894,7 @@ function imperialPath(path) {
     }
     afterImperialPath(path, wasGov);
     if (G.signed2000 && path !== "rebel" && chance(path === "resist" ? 45 : 20)) {
-        G.record.arrests.push(eraYear(currentBBY()));
-        report("Arrested", "The Imperial Security Bureau comes for the signatories of the Petition of the 2,000. You are one of them.");
-        frontScene("outsider_path", { reason: "Arrested as a signatory of the Petition of the 2,000." });
-        enterOutsider("Prisoner", 30);
+        queueArrest("as a signatory of the Petition of the 2,000", ri(3, 5), 30);
     }
 }
 

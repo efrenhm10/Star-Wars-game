@@ -202,7 +202,7 @@ Object.assign(EVENTS, {
             text: "An ISB supervisor has requested your office's records — and your travel logs.",
             choices: [
                 { label: "Cooperate fully", e: { heat: -5 }, run: () => { G.isb = Math.max(0, (G.isb || 0) - 15); }, msg: "The supervisor leaves satisfied. Probably." },
-                { label: "Stall", run: () => { if (chance((G.isb || 0) / 2 + (G.secretRebel ? 20 : 0))) { G.record.arrests.push(eraYear(currentBBY())); report("Arrested", "The ISB found what it was looking for."); frontScene("outsider_path", { reason: "Arrested by the Imperial Security Bureau." }); enterOutsider("Prisoner", 24); } else G.isb = (G.isb || 0) + 5; }, msg: "" },
+                { label: "Stall", run: () => { if (chance((G.isb || 0) / 2 + (G.secretRebel ? 20 : 0))) queueArrest("for obstructing the Imperial Security Bureau", ri(2, 4), 24); else G.isb = (G.isb || 0) + 5; }, msg: "" },
                 { label: "Destroy the evidence", e: { heat: 10 }, run: () => { G.isb = Math.max(0, (G.isb || 0) - 10); }, msg: "Nothing to find. Suspicious in itself." }
             ], def: 1 }) },
 

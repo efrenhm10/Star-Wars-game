@@ -363,9 +363,28 @@ function goUndergroundFromRevolt() {
 
 // ── Panels ────────────────────────────────────────────────────────
 
+function prisonPanel() {
+    const o = G.office;
+    const last = G.record.arrests[G.record.arrests.length - 1];
+    return panel("⛓️ Imprisoned", `<p>You are in an Imperial prison${last ? ` (arrested ${esc(last)})` : ""}. About <b>${Math.max(1, o.timer)} month${o.timer === 1 ? "" : "s"}</b> left on your sentence — if the Empire keeps its word. When you're released you'll choose what to do with your life.</p>
+        ${tact("prison", "🗝️ Plan an escape", 3, "One chance. If it fails, your sentence grows.", 'data-t="escape"')}
+        ${tact("prison", "📜 Appeal through your allies", 3, `Months off your sentence (${allies().length} allies).`, 'data-t="appeal"')}
+        ${tact("prison", "🤐 Keep your head down", 1, "Health holds; time passes.", 'data-t="wait"')}`, "danger");
+}
+
+function prisonAction(t) {
+    if (!inImperialPrison()) return;
+    if (!spendAP({ escape: 3, appeal: 3, wait: 1 }[t] || 1)) return;
+    if (t === "escape") { frontScene("emp_prison", {}); }
+    else if (t === "appeal") { if (chance(25 + allies().length * 8)) { const cut = ri(4, 10); G.office.timer = Math.max(1, G.office.timer - cut); report("An appeal heard", `Your allies' petitions work. ${cut} months come off your sentence.`); } else report("Appeal denied", "The tribunal doesn't even read it."); }
+    else applyEffects({ health: 2 });
+    render();
+}
+
 function empirePanels() {
     initEmpireState();
     let out = "";
+    if (inImperialPrison()) return prisonPanel();
     if (G.revolt && governing()) out += revoltPanel();
     if (canProbe()) out += probePanel();
     out += resistancePanels();
@@ -740,6 +759,7 @@ function tickEmpire() {
         G.revolt = null; G.wrath = 0;
         return;
     }
+    tickPendingArrest();
     if (G.ug && isUnderground()) tickUnderground();
     if (G.revolt) tickRevolt();
     if (!palAlive() || G.scenes.length > 2) return;
@@ -751,6 +771,53 @@ function tickEmpire() {
     if (d >= 50 && t.colleague == null && chance(12)) { t.colleague = now; pushScene("emp_colleague", {}); return; }
     const killingEra = currentBBY() <= 22 || isEmpireEra();
     if (d >= 55 && killingEra && now - (t.attempt == null ? -99 : t.attempt) > 10 && chance((d - 40) / 3)) { t.attempt = now; pushScene("emp_assassin", { kind: pick(["kouhun", "speeder", "sniper", "poison"]) }); return; }
-    if (isEmpireEra() && !(G.revolt && G.revolt.stage !== "occupied") && d >= 65 && now - (t.knock == null ? -99 : t.knock) > 12 && chance((d - 55) / 5)) { t.knock = now; pushScene("emp_knock", {}); return; }
+    // Before they come for you, someone warns you.
+    if (isEmpireEra() && !(G.revolt && G.revolt.stage !== "occupied") && d >= 55 && now - (t.tipoff == null ? -99 : t.tipoff) > 18 && chance((d - 45) / 4)) { t.tipoff = now; pushScene("emp_tipoff", { reason: "Your name is on an ISB list." }); return; }
+    if (isEmpireEra() && !(G.revolt && G.revolt.stage !== "occupied") && d >= 65 && t.tipoff != null && now - t.tipoff >= 2 && now - t.tipoff <= 12 && now - (t.knock == null ? -99 : t.knock) > 12 && chance((d - 55) / 4)) { t.knock = now; pushScene("emp_knock", {}); return; }
     if (isEmpireEra() && G.jediHidden && chance(1.5)) { G.jediHidden = false; G.isb = (G.isb || 0) + 25; report("They know", "A neighbour remembers the young stranger in your storeroom. The ISB opens a file."); }
 }
+
+
+// ── Arrests come with a warning ───────────────────────────────────
+
+// The ISB decides to arrest you; a friend warns you first; then they come.
+function queueArrest(reason, months, sentence) {
+    initEmpireState();
+    if (G.threat.arrest || isUnderground() || inImperialPrison()) return;
+    G.threat.arrest = { reason, at: monthsNow() + months, sentence, warned: false };
+}
+
+function tickPendingArrest() {
+    const a = G.threat.arrest;
+    if (!a) return;
+    if (isUnderground() || inImperialPrison() || G.era === "newrepublic") { G.threat.arrest = null; return; }
+    if (!a.warned) { a.warned = true; G.threat.tipoff = monthsNow(); pushScene("emp_tipoff", { reason: `They mean to arrest you ${a.reason}.`, months: a.at - monthsNow() }); return; }
+    if (monthsNow() >= a.at && !G.scenes.some(s => s.type === "emp_arrest")) pushScene("emp_arrest", { reason: a.reason, sentence: a.sentence });
+}
+
+Object.assign(SCENES, {
+    emp_tipoff: ctx => {
+        const who = ctx.who || (ctx.who = pick(["Your chief of staff, pale, closing the door behind them", "An old friend who now works in the ISB's records division", "A clerk in the Moff's office you once helped", "An anonymous message on a channel only three people know", "Your driver, who has a cousin in the stormtroopers"]));
+        const fam = G.family.spouse || G.family.children.some(c => c.alive);
+        return { tag: "⚠️ A WARNING", title: "They're coming for you",
+            body: `<p>${esc(who)}: <i>"${esc(ctx.reason || "Your name is on a list.")} ${ctx.months ? `Weeks — ${ctx.months <= 1 ? "maybe days" : `a month or two at most`}.` : "I don't know when."} I never told you this."</i></p>
+                <p class="small muted">You have a little time. Use it.</p>`,
+            choices: [
+                ...(typeof havens === "function" && havens().length ? [{ label: "🚀 Leave tonight — flee to a world that's still fighting", go: () => { G.threat.arrest = null; frontScene("flee_pick", {}); } }] : []),
+                { label: "✊ Disappear into the underground", hint: "Leave office. Become a fugitive.", go: () => { G.threat.arrest = null; imperialPath("rebel"); } },
+                { label: "🤝 Call in every favour you have", hint: `Influence −10. Works better with powerful friends (${allies().length} allies).`, go: () => { applyEffects({ influence: -10 }); if (chance(35 + allies().length * 6 + G.influence * 0.3)) { G.threat.arrest = null; G.isb = Math.max(0, (G.isb || 0) - 15); report("Called off", "Three calls, two dinners and a favour you'll be repaying for years. The order is quietly withdrawn."); } else report("Not enough", "Your friends are sympathetic. None of them will put their name on it."); } },
+                { label: "🔥 Destroy the evidence and lie low", hint: "They may lose interest.", go: () => { G.threat.laylow = 6; G.isb = Math.max(0, (G.isb || 0) - 15); if (G.threat.arrest && chance(40)) { G.threat.arrest = null; report("The file goes cold", "With nothing to find and nothing to watch, the case is shelved. For now."); } } },
+                ...(fam && !G.threat.familySafe ? [{ label: "🛡️ Get your family offworld first", hint: "0.5M credits.", go: () => { G.threat.familySafe = true; applyEffects({ funds: -0.5 }); report("Safe", "Your family leaves on a freighter before dawn. Whatever happens to you, it won't happen to them."); } }] : []),
+                { label: "Stay and face it", go: () => {} }
+            ] };
+    },
+    emp_arrest: ctx => ({
+        tag: "0300 HOURS", title: "They came",
+        body: `<p>Exactly as you were warned. ISB officers and a squad of stormtroopers, here to arrest you ${esc(ctx.reason)}.</p>`,
+        choices: [
+            { label: "Go quietly", hint: `Prison — about ${Math.round((ctx.sentence || 24) / 12)} years.`, go: () => { G.threat.arrest = null; imprisonImperial(`Arrested ${ctx.reason}.`, ctx.sentence || 24); } },
+            ...(allies().length >= 2 ? [{ label: "Call your allies from the doorway", hint: "A last chance.", go: () => { if (chance(25 + allies().length * 5)) { G.threat.arrest = null; applyEffects({ influence: -8 }); report("A reprieve", "A senator, a general and a Moff's cousin call within the hour. The officers leave. They'll be back."); } else { G.threat.arrest = null; imprisonImperial(`Arrested ${ctx.reason}, despite your allies.`, ctx.sentence || 24); } } }] : []),
+            { label: "Out the back window", hint: "Run. Become a fugitive.", go: () => { G.threat.arrest = null; if (chance(60)) { imperialPath("rebel"); if (G.ug) G.ug.exposure = 60; report("Gone", "Over the rooftops and into the lower city. You have nothing now but your name and the people who'll hide you."); } else { report("Caught", "They were waiting at the back too."); imprisonImperial(`Arrested ${ctx.reason} while trying to escape.`, (ctx.sentence || 24) + 12); } } }
+        ]
+    })
+});

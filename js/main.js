@@ -59,6 +59,7 @@ const ACTIONS = {
     raisehome: () => raiseHome(),
     declarerevolt: () => declareRevolt(),
     personal: d => personalAction(d.t, d.k),
+    prison: d => prisonAction(d.t),
     flyhome: () => flyHome(),
     defensegrant: () => seekDefenseGrant(),
     probe: d => probeChancellor(d.t),
